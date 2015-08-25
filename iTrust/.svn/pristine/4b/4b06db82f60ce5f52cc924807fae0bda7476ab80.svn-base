@@ -1,0 +1,135 @@
+package edu.ncsu.csc.itrust.http;
+
+import com.meterware.httpunit.WebConversation;
+import com.meterware.httpunit.WebForm;
+import com.meterware.httpunit.WebResponse;
+
+import edu.ncsu.csc.itrust.enums.TransactionType;
+/**
+ * 
+ * @author Suchat Jiranuntarat
+ * The following is the HttpTest for viewTransaction.jsp
+ * 
+ */
+
+//************************************Test Cases:********************************************
+	/*
+	 * 1) Tester performing a View on specific filters
+	 * 2) Tester performing a View on invalid filters
+	 * 3) Admin performing a Summary on specific filters
+	 * 4) Admin performing a Summary on invalid filters
+	 */
+	//*******************************************************************************************
+public class ViewTransactionLogsTest extends iTrustHTTPTest {
+
+	@Override
+	protected void setUp() throws Exception {
+		super.setUp(); // clear tables is called in super
+		gen.clearAllTables();
+		gen.standardData();
+	}
+	
+	@Override
+	protected void tearDown() throws Exception {
+		super.tearDown();
+		gen.clearAllTables();
+	}
+	/*
+	 * testTesterView()
+	 * Software Tester (9999999999) uses the Transaction Log filter
+	 * and the View submit button to view a filtered result of transaction logs
+	 */
+	public void testTesterView() throws Exception{
+		WebConversation wc = login("9999999999", "pw");
+		WebResponse wr = wc.getCurrentPage();
+		
+		wr = wr.getLinkWith("Transaction Log").click();
+		assertEquals(ADDRESS + "auth/viewTransaction.jsp", wr.getURL().toString());
+		
+		WebForm form = wr.getForms()[0];
+		form.setParameter("loggedInRole","all");
+		form.setParameter("secondRole","all");
+		form.setParameter("startDate","06/01/2007");
+		form.setParameter("endDate","11/08/2014");
+		form.setParameter("transactionType","all"); //LOGIN_SUCCESS
+		form.getSubmitButtons()[0].click();
+		wr = wc.getCurrentPage();
+		assertTrue(wr.getText().contains("Transaction Logs View"));
+		assertFalse(wr.getText().contains("No Entries Found"));
+		
+		
+	}
+	/*
+	 * testTesterFailedView()
+	 * Software Tester (9999999999) uses the Transaction Log filter
+	 * and the View submit button to view a filtered result of transaction logs
+	 * The filter returns no results
+	 */
+	public void testTesterFailedView() throws Exception{
+		WebConversation wc = login("9999999999", "pw");
+		WebResponse wr = wc.getCurrentPage();
+		
+		wr = wr.getLinkWith("Transaction Log").click();
+		assertEquals(ADDRESS + "auth/viewTransaction.jsp", wr.getURL().toString());
+		
+		WebForm form = wr.getForms()[0];
+		form.setParameter("loggedInRole","all");
+		form.setParameter("secondRole","all");
+		form.setParameter("transactionType","10"); //LOGIN_SUCCESS
+		form.getSubmitButtons()[0].click();
+		wr = wc.getCurrentPage();
+		assertTrue(wr.getText().contains("Transaction Logs View"));
+		assertTrue(wr.getText().contains("No Entries Found"));
+		
+	}
+	
+	/*
+	 * testAdminSummary()
+	 * Software Tester (9000000001) uses the Transaction Log filter
+	 * and the Summary submit button to view a filtered result of transaction logs
+	 */
+	public void testAdminSummary() throws Exception{
+		WebConversation wc = login("9000000001", "pw");
+		WebResponse wr = wc.getCurrentPage();
+		
+		wr = wr.getLinkWith("Transaction Log").click();
+		assertEquals(ADDRESS + "auth/viewTransaction.jsp", wr.getURL().toString());
+		
+		WebForm form = wr.getForms()[0];
+		form.setParameter("loggedInRole","all");
+		form.setParameter("secondRole","all");
+		form.setParameter("startDate","06/01/2007");
+		form.setParameter("endDate","11/08/2014");
+		form.setParameter("transactionType","all"); //LOGIN_SUCCESS
+		form.getSubmitButtons()[1].click();
+		wr = wc.getCurrentPage();
+		assertTrue(wr.getText().contains("Transaction Logs Summary"));
+		assertFalse(wr.getText().contains("No Entries Found"));
+		
+		
+	}
+	/*
+	 * testAdminFailedSummary()
+	 * Admin (9000000001) uses the Transaction Log filter
+	 * and the Summary submit button to view a filtered result of transaction logs
+	 * The filter returns no results
+	 */
+	public void testAdminFailedSummary() throws Exception{
+		WebConversation wc = login("9000000001", "pw");
+		WebResponse wr = wc.getCurrentPage();
+		
+		wr = wr.getLinkWith("Transaction Log").click();
+		assertEquals(ADDRESS + "auth/viewTransaction.jsp", wr.getURL().toString());
+		
+		WebForm form = wr.getForms()[0];
+		form.setParameter("loggedInRole","all");
+		form.setParameter("secondRole","all");
+		form.setParameter("transactionType","10"); //LOGIN_SUCCESS
+		form.getSubmitButtons()[1].click();
+		wr = wc.getCurrentPage();
+		assertTrue(wr.getText().contains("Transaction Logs Summary"));
+		assertTrue(wr.getText().contains("No Entries Found"));
+		
+	}
+	
+}

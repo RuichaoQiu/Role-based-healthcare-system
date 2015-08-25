@@ -1,0 +1,42 @@
+package edu.ncsu.csc.itrust.beans.loaders;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import edu.ncsu.csc.itrust.beans.ObstericsBean;
+
+/**
+ * A loader for OfficeVisitBeans.
+ * 
+ * Loads in information to/from beans using ResultSets and PreparedStatements. Use the superclass to enforce consistency. 
+ * For details on the paradigm for a loader (and what its methods do), see {@link BeanLoader}
+ */
+public class ObstericsLoader implements BeanLoader<ObstericsBean> {
+	public List<ObstericsBean> loadList(ResultSet rs) throws SQLException {
+		List<ObstericsBean> list = new ArrayList<ObstericsBean>();
+		while (rs.next()) {
+			list.add(loadSingle(rs));
+		}
+		return list;
+	}
+
+	public ObstericsBean loadSingle(ResultSet rs) throws SQLException {
+		ObstericsBean ov = new ObstericsBean();
+		ov.setMid(rs.getLong("mid"));
+		ov.setDaysPreg(rs.getString("daysPreg"));
+		ov.setWeeksPreg(rs.getString("weeksPreg"));
+		ov.setWeight(rs.getString("weight"));
+		ov.setBloodPressure(rs.getString("bloodPressure"));
+		ov.setFHR(rs.getString("FHR"));
+		ov.setFHP(rs.getString("FHP"));
+		return ov;
+	}
+
+	public PreparedStatement loadParameters(PreparedStatement ps, ObstericsBean p) throws SQLException {
+		throw new IllegalStateException("unimplemented!");
+	}
+}

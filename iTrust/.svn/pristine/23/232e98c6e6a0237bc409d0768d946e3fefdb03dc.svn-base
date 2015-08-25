@@ -1,0 +1,118 @@
+package edu.ncsu.csc.itrust.dao.mysql;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.DBUtil;
+import edu.ncsu.csc.itrust.beans.MessageFilterBean;
+import edu.ncsu.csc.itrust.beans.loaders.MessageFilterBeanLoader;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.exception.DBException;
+
+/**
+ * Used for all message filter beans
+ * 
+ * DAO stands for Database Access Object. All DAOs are intended to be reflections of the database, that is,
+ * one DAO per table in the database (most of the time). For more complex sets of queries, extra DAOs are
+ * added. DAOs can assume that all data has been validated and is correct.
+ * 
+ * DAOs should never have setters or any other parameter to the constructor than a factory. All DAOs should be
+ * accessed by DAOFactory (@see {@link DAOFactory}) and every DAO should have a factory - for obtaining JDBC
+ * connections and/or accessing other DAOs.
+ * 
+ *  
+ * 
+ */
+public class MessageFilterDAO {
+	private MessageFilterBeanLoader loader = new MessageFilterBeanLoader();
+	private DAOFactory factory;
+
+	/**
+	 * The typical constructor.
+	 * @param factory The {@link DAOFactory} associated with this DAO, which is used for obtaining SQL connections, etc.
+	 */
+	public MessageFilterDAO(DAOFactory factory) {
+		this.factory = factory;
+	}
+	
+	
+	/**
+	 * Returns the saved filter for the logged in mid
+	 * 
+	 * @param mid The MID of the logged in mid
+	 * @return A MessageFilterBean
+	 * @throws DBException
+	 */
+	public MessageFilterBean getSavedMessageFilter(long mid) throws DBException {
+		Connection conn = null;
+		PreparedStatement ps = null;
+		MessageFilterBean bean = null;
+		try {
+			conn = factory.getConnection();
+			ps = conn.prepareStatement("SELECT * FROM messageFilters WHERE mid=? LIMIT 1");
+			ps.setLong(1, mid);
+			ResultSet rs;
+			rs = ps.executeQuery();
+			rs.next();
+			if (rs.getRow() == 1) {
+				bean = loader.loadSingle(rs);
+			}
+			else {
+				bean = new MessageFilterBean();
+			}
+			rs.close();
+			System.out.println("Message Filter Get Successful");
+		} catch (SQLException e) {
+			
+			throw new DBException(e);
+		} finally {
+			DBUtil.closeConnection(conn, ps);
+		}
+		return bean;
+	}
+	
+	
+	
+	/**
+	 * Inserts the saved filter for the logged in mid
+	 * 
+	 * @param mid The logged in mid where we will save the filter
+	 * @param bean The MessageFilterBean object to insert
+	 * @return A boolean indicating whether the insert was successful.
+	 * @throws DBException
+	 */
+	public boolean saveMessageFilter(long mid, MessageFilterBean bean) throws DBException {
+		Connection conn = null;
+		PreparedStatement ps1 = null;
+		PreparedStatement ps2 = null;
+		int numInserted = 0;
+		try {
+			
+			conn = factory.getConnection();
+			
+			//delete the old saved filter
+			ps1 = conn.prepareStatement("DELETE FROM messageFilters WHERE mid=? LIMIT 1");
+			ps1.setLong(1, mid);
+			numInserted = ps1.executeUpdate();
+			
+			//insert the new filter
+			ps2 = conn.prepareStatement("INSERT INTO messageFilters(mid,sender,subject,contains,notContains,startDate,endDate) VALUES(?,?,?,?,?,?,?)");
+			loader.loadParameters(ps2, bean);
+			numInserted = ps2.executeUpdate();
+			
+			System.out.println("Message Filter Save Successful");
+		} catch (SQLException e) {
+			//System.out.println(e.toString());
+			throw new DBException(e);
+		} finally {
+			DBUtil.closeConnection(conn, ps1);
+			DBUtil.closeConnection(conn, ps2);
+		}
+		return (numInserted == 1);
+	}
+	
+}

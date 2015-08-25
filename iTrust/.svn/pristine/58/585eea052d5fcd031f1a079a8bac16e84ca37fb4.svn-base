@@ -1,0 +1,119 @@
+<%@taglib uri="/WEB-INF/tags.tld" prefix="itrust"%>
+<%@page errorPage="/auth/exceptionHandler.jsp"%>
+
+<%@page import="java.util.List"%>
+<%@page import="java.util.Calendar"%>
+<%@page import="java.text.DecimalFormat"%>
+<%@page import="edu.ncsu.csc.itrust.dao.DAOFactory"%>
+<%@page import="edu.ncsu.csc.itrust.action.ViewInitRecordsHistoryAction"%>
+<%@page import="edu.ncsu.csc.itrust.beans.InitRecord"%>
+<%@page import="edu.ncsu.csc.itrust.BeanBuilder"%>
+<%@page import="edu.ncsu.csc.itrust.exception.FormValidationException"%>
+<%@page import="edu.ncsu.csc.itrust.beans.PersonnelBean"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO"%>
+
+<%@include file="/global.jsp" %>
+
+<%
+pageTitle = "iTrust - Edit Basic Init Record";
+%>
+
+<%@include file="/header.jsp" %>
+<itrust:patientNav thisTitle="Basic Init History" />
+<%
+// Require a Patient ID first
+String pidString = (String)session.getAttribute("pid");
+if (pidString == null || 1 > pidString.length()) {
+	response.sendRedirect("/iTrust/auth/getPatientID.jsp?forward=hcp-uap/InitRecords.jsp");
+   	return;
+}
+
+//Create ViewHealthRecordsHistoryAction object to interact with patient's historical health metric history
+ViewInitRecordsHistoryAction historyAction = new ViewInitRecordsHistoryAction(prodDAO,pidString,loggedInMID.longValue());
+
+
+//Get the patient's name
+String patientName = historyAction.getPatientName();
+String gender = historyAction.getPatientGender();
+
+//Get all of the patient's health records
+List<InitRecord> records = historyAction.getAllPatientInitRecords();
+//Save the list of health records in the session
+session.setAttribute("InitRecordsList", records);
+
+
+
+%>
+
+<br />
+<div align=center>
+	<table id="InitRecordsTable" align="center" class="fTable">
+
+	<%
+	if (!gender.equals("Female")){
+		%>
+			<p style="font-size:20px"><i>The patient is not eligible for obstetric care.</i></p>
+		<%
+	}
+	else
+	if(records.isEmpty()){
+		%>
+			<p style="font-size:20px"><i>No init records available</i></p>
+		<%
+	}
+	else{
+		for(InitRecord hr : records){
+			if(!records.isEmpty()){
+				%>
+				<!-- 
+				Create a health history table with height, weight, bmi, blood pressure, patient smoking status, household smoking status, 
+				cholesterol, last recorded date, and recorded by personnel fields.
+				 -->
+				<tr>
+					<th colspan="14" style="text-align: center;"><%= patientName %>'s Init Record History</th>
+				</tr>
+				<tr class = "subHeader">
+					<td>Mid</td>
+					<td>LastName</td>
+					<td>FirstName</td>
+					<td>LMP</td>
+					<td>EDD</td>
+					<td>PriorPregnancies</td>
+					<td>Notes</td>
+				</tr>
+				<%
+			}
+			if(!records.isEmpty()){
+				%>
+				<!-- 
+				Get the height, weight, bmi, blood pressure, patient smoking status, household smoking status, cholesterol, date recorded, 
+				and recorded by personnel for each health record
+				-->
+				<tr>
+					<td align=center><%= StringEscapeUtils.escapeHtml("" + (hr.getMid())) %></td>
+					<td align=center><%= StringEscapeUtils.escapeHtml("" + (hr.getLastname())) %></td>
+					<td align=center><%= StringEscapeUtils.escapeHtml("" + (hr.getFirstname())) %></td>
+					<td align=center><%= StringEscapeUtils.escapeHtml("" + (hr.getLMPstr())) %></td>
+					<td align=center><%= StringEscapeUtils.escapeHtml("" + (hr.getEDDstr())) %></td>
+					<td align=center><%= StringEscapeUtils.escapeHtml("" + (hr.getPriorPregnancies())) %></td>
+					<td align=center><%= StringEscapeUtils.escapeHtml("" + (hr.getNotes())) %></td>
+				</tr>
+				<%
+			}
+			
+		}
+	}
+	%>
+	</table>
+	<br />
+</div>
+<br />
+
+<br />
+<br />
+<br />
+
+<%@include file="/footer.jsp" %>
+
+
+

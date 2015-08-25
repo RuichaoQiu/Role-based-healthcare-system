@@ -1,0 +1,233 @@
+<%@taglib uri="/WEB-INF/tags.tld" prefix="itrust"%>
+<%@page errorPage="/auth/exceptionHandler.jsp"%>
+
+<%@page import="java.util.List"%>
+<%@page import="java.util.Calendar"%>
+<%@page import="java.util.Date"%>
+<%@page import="java.text.DecimalFormat"%>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="edu.ncsu.csc.itrust.dao.DAOFactory"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.InitRecordsDAO"%>
+<%@page import="edu.ncsu.csc.itrust.action.ViewInitRecordsHistoryAction"%>
+<%@page import="edu.ncsu.csc.itrust.beans.InitRecord"%>
+<%@page import="edu.ncsu.csc.itrust.BeanBuilder"%>
+<%@page import="edu.ncsu.csc.itrust.exception.FormValidationException"%>
+<%@page import="edu.ncsu.csc.itrust.beans.PersonnelBean"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO"%>
+
+<%@include file="/global.jsp" %>
+
+<%
+pageTitle = "iTrust - Add Basic Init Record";
+%>
+
+<%@include file="/header.jsp" %>
+<itrust:patientNav thisTitle="Basic Init History" />
+<%
+// Require a Patient ID first
+String pidString = (String)session.getAttribute("pid");
+if (pidString == null || 1 > pidString.length()) {
+	response.sendRedirect("/iTrust/auth/getPatientID.jsp?forward=hcp-uap/addInitRecord.jsp");
+   	return;
+}
+
+//Create ViewInitialRecordsHistoryAction object to interact with patient's historical Initial metric history
+ViewInitRecordsHistoryAction historyAction = new ViewInitRecordsHistoryAction(prodDAO,pidString,loggedInMID.longValue());
+
+
+//Get the patient's info
+String patientName = historyAction.getPatientName();
+String patientFirstName = historyAction.getPatientFirstName();
+String patientLastName = historyAction.getPatientLastName();
+String gender = historyAction.getPatientGender();
+
+
+//Process add a record form
+String formIsFilled = request.getParameter("formIsFilled");
+String formError = "";
+if (formIsFilled != null) { // add the record only if the form is filled
+	
+	//get form fields
+	String newRecord_mid_in = request.getParameter("mid");
+	String newRecord_firstname = request.getParameter("firstname");
+	String newRecord_lastname = request.getParameter("lastname");
+	String newRecord_LMP_in = request.getParameter("LMP");
+	String newRecord_Notes = request.getParameter("notes");
+	
+	
+	
+	//
+	//clean up and check form fields
+	//
+	
+	SimpleDateFormat inputFormatter = new SimpleDateFormat("MM/dd/yyyy"); //format for reading in from the form
+	SimpleDateFormat outputFormatter = new SimpleDateFormat("yyyy-MM-dd"); //format for putting it into the database
+	
+	//clean up and check mid
+	int newRecord_mid = -1;
+	if (formError == "") { //we have no errors so far, so we keep going
+		newRecord_mid = Integer.parseInt(newRecord_mid_in);
+	}
+	
+	//clean up and check LMP
+	String newRecord_LMP = "0000-00-00";
+	Date LMP_date = null;
+	if (formError == "") { //we have no errors so far, so we keep going
+		try {
+			LMP_date = inputFormatter.parse(newRecord_LMP_in);
+			newRecord_LMP = outputFormatter.format(LMP_date);
+	 
+		} catch (Exception e) {
+			formError = "Invalid date format. Please try again.";
+		}
+	}
+	
+	//calculate EDD
+	String newRecord_EDD = "0000-00-00";
+	Date EDD_date = null;
+	if (formError == "") { //we have no errors so far, so we keep going
+		Calendar cal = Calendar.getInstance();
+        cal.setTime(LMP_date);
+        cal.add(Calendar.DATE, 280); //minus number would decrement the days
+        EDD_date = cal.getTime();
+        newRecord_EDD = outputFormatter.format(EDD_date);
+	}
+	
+	//calculate Weeks Pregnant
+	Date now_date = null;
+	String newRecord_WeeksPreg = null;
+	if (formError == "") { //we have no errors so far, so we keep going
+		
+		//calculate days pregnant
+		now_date = new Date();
+		long daysPreg = 0;
+		daysPreg = now_date.getTime() - LMP_date.getTime();
+		daysPreg = daysPreg / 86400000; //number of milliseconds in a day
+		
+		//calculate weeks pregnant
+		long weeksPreg = daysPreg / 7;
+		
+		//calculate days in week pregnant (ex. 3 weeks 4 days). We are calculating the days
+		long daysInWeekPreg = daysPreg % 7;
+		
+		newRecord_WeeksPreg = weeksPreg + " Week(s) " + daysInWeekPreg + " Day(s)";
+		
+		//check if we have an error
+		if (daysPreg < 0) {
+			formError = "Invalid date selection. Please try again.";
+		}
+		
+	}
+	
+	//calculate Prior Pregnancies
+	String newRecord_PriorPregs = null;
+	if (formError == "") { //we have no errors so far, so we keep going
+		
+		//TOOD for Subflow 3
+		newRecord_PriorPregs = "This part is not implemented yet. Please be patient.";
+	}
+	
+	
+	//initialize the newRecord
+	InitRecord newRecord = null;
+	if (formError == "") { //we have no errors so far, so we keep going
+		newRecord = new InitRecord();
+		newRecord.setMid(newRecord_mid);
+		newRecord.setFirstname(newRecord_firstname);
+		newRecord.setLastname(newRecord_lastname);
+		newRecord.setLMP(newRecord_LMP);
+		newRecord.setEDD(newRecord_EDD);
+		newRecord.setWeeksPreg(newRecord_WeeksPreg);
+		newRecord.setPriorPregnancies(newRecord_PriorPregs);
+		newRecord.setNotes(newRecord_Notes);
+	}
+	
+	
+	
+	//add the newRecord to the database
+	boolean addSuccess = false;
+	if (formError == "") { //we have no errors so far, so we keep going
+		try {
+			InitRecordsDAO initDAO = prodDAO.getInitRecordsDAO();
+			addSuccess = initDAO.add(newRecord);
+			if (addSuccess == false) {
+				formError = "New Record was not added successfully. Please Try Again.";
+			}
+		}
+		catch (Exception e) {
+			formError = "New Record was not added successfully. Please Try Again.";
+		}
+	}
+	
+	
+	//format the formError for display
+	if (formError != "") {
+		formError = "<br/><p style=\"font-size:20px;color:red;text-align:center;\"><i>Error: " + formError + "</i></p>";
+	}
+	else {
+		
+		//Log for an HCP
+		loggingAction.logEvent(TransactionType.HCP_CREATE_INIT_RECORD, loggedInMID, newRecord_mid, "");
+		response.sendRedirect("InitRecords.jsp");
+		return;
+	}
+	
+}
+
+
+
+//Get all of the patient's Initial records
+List<InitRecord> records = historyAction.getAllPatientInitRecords();
+//Save the list of initial records in the session
+session.setAttribute("InitRecordsList", records);
+%>
+
+
+<%= formError %>
+
+<br />
+<div align=center id="general">
+<form action="addInitRecord.jsp" method="post" id="mainForm">
+<input type="hidden" name="formIsFilled" value="true" />
+<input type="hidden" name="formName" value="mainForm" />
+
+<input type="hidden" name="firstname" value="<%= patientFirstName %>" />
+<input type="hidden" name="lastname" value="<%= patientFirstName %>" />
+<input type="hidden" name="mid" value="<%= pidString %>" />
+
+<table class="fTable" align="center">
+	<tr>
+		<td class="subHeaderVertical">Patient ID:</td>
+		<td><%= patientName %> </td>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">Last Menstrual Period (LMP):</td>
+		<td>
+		  <input name="LMP" value=""/>
+		  <input type="button" value="Select Date" onclick="displayDatePicker('LMP');"/>
+		</td>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">Notes:</td>
+		<td>
+		  <textarea rows="4" cols="50" name="notes"></textarea>
+		</td>
+	</tr>
+	<tr>
+	   <td colspan="2" align="center">
+			<input type="submit" name="submit" value="Add Record" >
+		</td>
+    </tr>
+</table>
+</form>
+</div>
+<br />
+
+<br />
+<br />
+<br />
+
+<%@include file="/footer.jsp" %>
+
+
+

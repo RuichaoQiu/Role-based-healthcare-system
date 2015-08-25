@@ -1,0 +1,134 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.sql.Timestamp;
+import java.util.Date;
+
+import junit.framework.TestCase;
+import edu.ncsu.csc.itrust.beans.ApptBean;
+import edu.ncsu.csc.itrust.beans.Email;
+import edu.ncsu.csc.itrust.beans.MessageBean;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.datagenerators.TestDataGenerator;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+import edu.ncsu.csc.itrust.testutils.TestDAOFactory;
+
+/**
+ * GetVisitRemindersActionTest
+ */
+public class SendRemindersActionTest extends TestCase {
+	private DAOFactory factory = TestDAOFactory.getTestInstance();
+	private SendVisitRemindersAction action;
+	private TestDataGenerator gen = new TestDataGenerator();
+
+	@Override
+	protected void setUp() throws Exception {
+		gen.clearAllTables();
+	}
+
+	/**
+	 * testNormalReturn
+	 * @throws Exception
+	 */
+	public void testNormalReturn() throws Exception {
+		//Test that no exceptions are thrown on method call
+		//check valid data returns
+		gen.standardData();
+		//Login as kelly doctor
+		action = new SendVisitRemindersAction(factory, 9000000000L);
+		
+		action.sendVisitReminders(SendVisitRemindersAction.ReminderType.DIAGNOSED_CARE_NEEDERS);
+		action.sendVisitReminders(SendVisitRemindersAction.ReminderType.DIAGNOSED_CARE_NEEDERS,30);
+	}	
+	
+	
+	
+	
+	/**
+	 * testGetReminderType
+	 * @throws Exception
+	 */
+	public void testSendReminderType() throws Exception {
+		//Test that Enum->String translation works properly
+		gen.standardData();
+		//Login as kelly doctor
+		action = new SendVisitRemindersAction(factory, 9000000000L);
+		
+		assertEquals(SendVisitRemindersAction.ReminderType.DIAGNOSED_CARE_NEEDERS, 
+					 SendVisitRemindersAction.ReminderType.getReminderType("Diagnosed Care Needers"));
+	}
+	
+	/**
+	 * testBadReminderType
+	 * @throws Exception
+	 */
+	public void testBadReminderType() throws Exception {
+		//Test that a null ReminderType is not allowed
+		//Check other failure inputs
+		gen.standardData();
+		//Login as kelly doctor
+		action = new SendVisitRemindersAction(factory, 9000000000L);
+		try {
+			action.sendVisitReminders(null);
+			fail("testBadReminderType: bad reminder type not caught");
+		} catch(ITrustException e) {
+			assertEquals("Reminder Type DNE", e.getMessage());
+		}
+		try {
+			action.sendVisitReminders(null,0);
+			fail("testBadReminderType: bad reminder type not caught");
+		} catch(ITrustException e) {
+			assertEquals("Reminder Type DNE", e.getMessage());
+		}
+	}
+
+
+	/**
+	 * 
+	 * testBadReminderMessage
+	 */
+	public void testBadReminderMessage() throws Exception{
+		gen.standardData();
+		action = new SendVisitRemindersAction(factory,9000000000L);
+		try{
+			MessageBean reminder = action.makeReminderMessage(null);
+		}catch(ITrustException e){
+			assertEquals("Invalid Visit Needer", e.getMessage());
+		}
+	}
+	
+	/**
+	 * 
+	 * testBadReminderMessage
+	 */
+	public void testmakeReminderMessage() throws Exception{
+		gen.standardData();
+		action = new SendVisitRemindersAction(factory,9000000000L);
+		try{
+			ApptBean appt = new ApptBean();
+			appt.setApptID(123);
+			appt.setHcp(9000000000L);
+			appt.setPatient(1L);
+			Timestamp schedule = new Timestamp((new Date()).getTime() + (3*24 /*hours*/ * 60 /*minutes*/ * 60 /*seconds*/ * 1000));
+			appt.setDate(schedule);
+			MessageBean reminder = action.makeReminderMessage(appt);
+			assertEquals(reminder.getFrom(),9000000009L);
+			assertEquals(reminder.getTo(),1L);
+			assertEquals("Reminder: upcoming appointment in 3 day(s)",reminder.getSubject());
+			String time = schedule.getHours() + ":" + schedule.getMinutes();
+			String date = schedule.getMonth() + "/" + schedule.getDate() + "/" + schedule.getYear();
+			assertEquals("You have an appointment on " +time+", "+date+" with Dr. Doctor Kelly", reminder.getBody());
+		}catch(ITrustException e){
+			assertEquals("Invalid Visit Needer", e.getMessage());
+		}
+	}
+	
+	public void testMakeReminderEmail() throws Exception{
+		gen.standardData();
+		action = new SendVisitRemindersAction(factory, 9000000000L);
+		
+		Email test = action.makeReminderEmail("test@localhost");
+		assertEquals(test.getFrom(),"SystemReminder@itrust.com");
+		assertEquals(test.getSubject(),"New System Reminder");
+		assertEquals(test.getBody(),"You have a new message from System Reminder");
+	}
+}

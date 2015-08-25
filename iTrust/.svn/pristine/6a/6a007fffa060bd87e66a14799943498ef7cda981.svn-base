@@ -1,0 +1,161 @@
+<%@page import="edu.ncsu.csc.itrust.enums.TransactionType"%>
+<%@page import="edu.ncsu.csc.itrust.dao.DAOFactory"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO"%>
+<%@page import="edu.ncsu.csc.itrust.beans.PersonnelBean"%>
+<%@page import="java.util.List"%>
+<%@page import="edu.ncsu.csc.itrust.beans.TransactionBean"%>
+<%@page import="org.apache.commons.lang.StringEscapeUtils"%>
+<%@include file="/global.jsp" %>
+
+<%
+pageTitle = "iTrust - Transaction Logs";
+%>
+<%@include file="/header.jsp" %>
+<body>
+<%--
+<h1>Test Utilities</h1>
+A few clarifications:
+<ul>
+	<li>The <b>Type</b> is the name of the Java enum (from <code>edu.ncsu.csc.itrust.enums.TransactionType</code>)</li>
+	<li>The <b>Code</b> is the actual key that gets stored in the database, defined in the Transaction Type enum. Here's the <a href="#transactioncodes">table of transaction codes</a></a></li>
+	<li>The <b>Description</b> is plain-English description of that logging type
+</ul>
+<table border=1>
+	<tr>
+		<th>Time Logged</th>
+		<th>Type</th>
+		<th>Logged in User MID</th>
+		<th>Logged in User Role</th>
+		<th>Secondary MID</th>
+		<th>Secondary Role</th>
+		<th>Extra Info</th>
+	</tr>
+	<%
+		
+		List<TransactionBean> list = DAOFactory.getProductionInstance().getTransactionDAO().getAllTransactions();
+		for (TransactionBean t : list) {
+			
+			// We need to find the roles of logged in MID and the Secondary MID, so we have to pull from the Personnel database
+			PersonnelDAO pD =  DAOFactory.getProductionInstance().getPersonnelDAO();
+			PersonnelBean loggedInPB = pD.getPersonnel(t.getLoggedInMID());
+			PersonnelBean secondaryPB = pD.getPersonnel(t.getSecondaryMID());
+			
+			String loggedInRole = "Not specified";
+			String secondaryRole = "Not specified";
+			
+			// Some roles are not in the datbase, so these checks are here to prevent null pointer exceptions
+			if (loggedInPB != null){
+				loggedInRole = loggedInPB.getRoleString();
+			}
+			
+			if(secondaryPB != null){
+				secondaryRole = secondaryPB.getRoleString();
+			}
+				
+	%>
+	<tr>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getTimeLogged())) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getTransactionType().name())) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getLoggedInMID())) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (loggedInRole)) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getSecondaryMID())) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (secondaryRole)) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getAddedInfo())) %></td>
+	</tr>
+	<%
+	}
+	%>
+</table>
+<h1><a href="/iTrust">Back to iTrust</a></h1>
+<h1>Transaction Code Reference</h1>
+<a name="transactioncodes"></a>
+List is automatically generated from the <code>edu.ncsu.csc.itrust.enums.TransactionType</code> enum.
+<table border=1>
+<tbody>
+<tr>
+<th>Type</th>
+<th>Code</th>
+<th>Description</th>
+</tr>
+<%
+for(TransactionType type : TransactionType.values()){
+	%><tr><td><%=type.name()%></td><%
+	%><td><%=type.getCode()%></td><%
+	%><td><%=type.getDescription()%></td></tr><%
+}
+%>
+</tbody>
+</table>
+<h1><a href="/iTrust">Back to iTrust</a></h1>
+--%>
+<form name = "filter_logs"> 
+<input type="hidden" name="filter_log"> 
+<table class="fTable" align=center">
+	<tr>
+		<th align=center colspan = '4'>
+			Filter Transaction Logs
+		</th>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">
+			Logged In User Role
+		</td>
+		<td>
+			<select name="loggedInRole">
+				<option value="">Select:</option>
+				<option value="all">All</option>
+			</select>
+		</td>
+		<td class="subHeaderVertical">
+			Secondary User Role
+		</td>
+		<td>
+			<select name="secondRole">
+				<option value"">Select:</option>
+				<option value="all">All</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td>Start Date:</td>
+		<td>
+			<input name="startDate">
+			<input type=button value="Select Date" onclick="displayDatePicker('startDate');">
+		</td>
+		<td>End Date:</td>
+		<td>
+			<input name="endDate">
+			<input type=button value="Select Date" onclick="displayDatePicker('endDate');">
+		</td>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">
+			Transaction Type
+		</td>
+		<td>
+			<select name="secondRole">
+				<option value"">Select:</option>
+				<option value="all">All</option>
+			</select>
+		</td>
+		<td colspan ='2'></td>
+	</tr>
+	<tr>
+		<td>
+		</td>
+		<td colspan = '2'>
+			<input type="submit" name="view" id="view"
+			style="font-size: 10pt; font-weight: bold;"
+			value="View" />
+		</td>
+		<td colspan = '2'>
+			<input type="submit" name="summary" id="summary"
+			style="font-size: 10pt; font-weight: bold;"
+			value="Summary" />
+		</td>
+	</tr>
+</table>
+
+</form>
+</body>
+<%@include file="/footer.jsp" %>

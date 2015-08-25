@@ -1,0 +1,37 @@
+package edu.ncsu.csc.itrust.beans.loaders;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.ApptBean;
+import edu.ncsu.csc.itrust.beans.DeathStatsBean;
+
+public class DeathStatsBeanLoader implements BeanLoader<DeathStatsBean> {
+
+	public List<DeathStatsBean> loadList(ResultSet rs) throws SQLException {
+		List<DeathStatsBean> list = new ArrayList<DeathStatsBean>();
+		while (rs.next())
+			list.add(loadSingle(rs));
+		return list;
+	}
+
+	public PreparedStatement loadParameters(PreparedStatement ps,
+			DeathStatsBean bean) throws SQLException {
+		ps.setString(1, bean.getCode());
+		ps.setInt(2, bean.getCount());
+		ps.setString(3, bean.getDescription());
+		return ps;
+	}
+
+	public DeathStatsBean loadSingle(ResultSet rs) throws SQLException {
+		DeathStatsBean bean = new DeathStatsBean();
+		bean.setDescription(rs.getString("Description"));
+		bean.setCode(rs.getString("CauseOfDeath"));
+		bean.setCount(rs.getInt("numberDead"));
+		return bean;
+	}
+
+}

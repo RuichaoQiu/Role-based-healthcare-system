@@ -1,0 +1,130 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+import java.util.Calendar;
+import edu.ncsu.csc.itrust.beans.forms.VisitReminderReturnForm;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.dao.mysql.VisitRemindersDAO;
+import edu.ncsu.csc.itrust.dao.mysql.PatientDAO;
+import edu.ncsu.csc.itrust.beans.ProcedureBean;
+import edu.ncsu.csc.itrust.exception.FormValidationException;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+import edu.ncsu.csc.itrust.beans.VisitFlag;
+import edu.ncsu.csc.itrust.beans.PatientBean;
+import edu.ncsu.csc.itrust.enums.Gender;
+
+/**
+ * Gets the VisitReminders for a given patient Used by visitReminders.jsp
+ * 
+ * 
+ */
+public class SendVisitRemindersAction {
+
+	private static final int WEEK_IN_MILLIS = 1000 * 60 * 60 * 24 * 7;
+
+	/**
+	 * Reminder Type enumeration.
+	 */
+	public static enum ReminderType {
+		DIAGNOSED_CARE_NEEDERS("Diagnosed Care Needers");
+
+		private String typeName;
+
+		private ReminderType(String typeName) {
+			this.typeName = typeName;
+		}
+
+		private static final Map<String, ReminderType> map = new HashMap<String, ReminderType>();
+		static {
+			for (ReminderType rt : ReminderType.values()) {
+				map.put(rt.getTypeName(), rt);
+			}
+		}
+
+		/**
+		 * Gets the ReminderType for the name passed as a param
+		 * 
+		 * @param name
+		 * @return the ReminderType associated with the name
+		 */
+		public static ReminderType getReminderType(String name) {
+			return map.get(name);
+		}
+
+		/**
+		 * Returns the type name as a string
+		 * 
+		 * @return
+		 */
+		public String getTypeName() {
+			return typeName;
+		}
+	}
+
+	/**
+	 * 
+	 * Begin GetVisitRemindersAction code
+	 * 
+	 */
+	private VisitRemindersDAO visitReminderDAO;
+	private PatientDAO patientDAO;
+	private long loggedInMID;
+
+	/**
+	 * Set up defaults
+	 * 
+	 * @param factory The DAOFactory used to create the DAOs used in this action.
+	 * @param loggedInMID MID of the person who is logged in
+	 * @throws ITrustException
+	 */
+	public SendVisitRemindersAction(DAOFactory factory, long loggedInMID) throws ITrustException {
+		this.loggedInMID = loggedInMID;
+		visitReminderDAO = factory.getVisitRemindersDAO();
+		patientDAO = factory.getPatientDAO();
+	}
+
+	/**
+	 * Returns a list of VisitReminderReturnForms for the type passed in as a param
+	 * 
+	 * @param type
+	 *            the ReminderType
+	 * @return the list of VisitReminderReturnForms
+	 * @throws ITrustException
+	 * @throws FormValidationException
+	 */
+	public void sendVisitReminders(ReminderType type) throws ITrustException, FormValidationException {
+		
+		if (null == type)
+			throw new ITrustException("Reminder Type DNE");
+		
+		switch (type) {
+			case DIAGNOSED_CARE_NEEDERS:
+				List<VisitReminderReturnForm> visitNeeders = visitReminderDAO.getDiagnosedVisitNeeders(loggedInMID);
+				return;
+			default:
+				throw new ITrustException("Reminder Type DNE");
+		}
+	}
+	
+	public void sendVisitReminders(ReminderType type, int within) throws ITrustException, FormValidationException {
+		
+		if (null == type)
+			throw new ITrustException("Reminder Type DNE");
+		
+		switch (type) {
+			case DIAGNOSED_CARE_NEEDERS:
+				List<VisitReminderReturnForm> visitNeeders = visitReminderDAO.getDiagnosedVisitNeeders(loggedInMID);
+				return;
+			default:
+				throw new ITrustException("Reminder Type DNE");
+		}
+	}
+
+	
+
+	
+}

@@ -1,0 +1,7 @@
+package edu.ncsu.csc.itrust.dao.deathstats;
+
+import junit.framework.TestCase;
+
+public class DeathStatsDAOTest extends TestCase{
+
+}

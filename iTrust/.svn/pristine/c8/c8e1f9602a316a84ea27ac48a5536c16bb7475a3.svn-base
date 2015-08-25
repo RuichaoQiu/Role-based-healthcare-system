@@ -1,0 +1,189 @@
+package edu.ncsu.csc.itrust.beans;
+
+import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.ArrayList;
+
+/**
+ * A bean for storing message filter data.
+ * 
+ * A bean's purpose is to store data. Period. Little or no functionality is to be added to a bean 
+ * (with the exception of minor formatting such as concatenating phone numbers together). 
+ * A bean must only have Getters and Setters (Eclipse Hint: Use Source > Generate Getters and Setters 
+ * to create these easily)
+ */
+public class MessageFilterBean {
+	private long mid = 0;
+	private String sender = "";
+	private String subject = "";
+	private String contains = "";
+	private String notContains = "";
+	private String startDate = "";
+	private String endDate = "";
+
+	public MessageFilterBean() {
+	}
+
+	public long getMid() {
+		return mid;
+	}
+
+	public void setMid(long mid) {
+		this.mid = mid;
+	}
+	
+	public String getSender() {
+		return sender;
+	}
+
+	public void setSender(String sender) {
+		this.sender = sender;
+	}
+
+	public String getSubject() {
+		return subject;
+	}
+
+	public void setSubject(String subject) {
+		this.subject = subject;
+	}
+
+	public String getContains() {
+		return contains;
+	}
+
+	public void setContains(String contains) {
+		this.contains = contains;
+	}
+
+	public String getNotContains() {
+		return notContains;
+	}
+
+	public void setNotContains(String notContains) {
+		this.notContains = notContains;
+	}
+	
+	public boolean getIfStartDateIsSet() {
+		return !(startDate.equals("01/01/1970"));
+	}
+
+	public String getStartDate() {
+		return startDate;
+	}
+	
+	public String getStartDate_forUser() {
+		if (getIfStartDateIsSet()) {
+			return startDate;
+		}
+		else {
+			return "";
+		}
+	}
+	
+	
+	
+	public Date getStartDate_asDate() {
+		Date d = null;
+		if (!startDate.equals("")) {
+			try {
+				d = new SimpleDateFormat("MM/dd/yyyy").parse(startDate);
+			} catch (ParseException e) {
+				System.out.println(e.toString());
+			}
+		}
+		else {
+			try {
+				d = new SimpleDateFormat("MM/dd/yyyy").parse("01/01/1970");
+			} catch (ParseException e) {
+				System.out.println(e.toString());
+			}
+		}
+		
+		return d;
+	}
+	
+	public String getStartDate_asDBFormatted() {
+		
+		SimpleDateFormat inputFormatter = new SimpleDateFormat("MM/dd/yyyy"); //format for reading in from the form
+		SimpleDateFormat outputFormatter = new SimpleDateFormat("yyyy-MM-dd"); //format for putting it into the database
+		
+		Date d = null;
+		String date_str = "";
+		if (!startDate.equals("")) {
+			try {
+				d = inputFormatter.parse(startDate);
+				date_str = outputFormatter.format(d);
+			} catch (ParseException e) {
+				System.out.println(e.toString());
+			}
+		}
+		return date_str;
+	}
+
+	public void setStartDate(String startDate) {
+		this.startDate = startDate;
+	}
+	
+	public boolean getIfEndDateIsSet() {
+		return !(endDate.equals("01/01/1970"));
+	}
+
+	public String getEndDate() {
+		return endDate;
+	}
+	
+	public String getEndDate_forUser() {
+		if (getIfEndDateIsSet()) {
+			return endDate;
+		}
+		else {
+			return "";
+		}
+	}
+	
+	public Date getEndDate_asDate() {
+		Date d = null;
+		if (!endDate.equals("")) {
+			try {
+				d = new SimpleDateFormat("MM/dd/yyyy").parse(endDate);
+			} catch (ParseException e) {
+				System.out.println(e.toString());
+			}
+		}
+		else {
+			try {
+				d = new SimpleDateFormat("MM/dd/yyyy").parse("01/01/1970");
+			} catch (ParseException e) {
+				System.out.println(e.toString());
+			}
+		}
+		return d;
+	}
+	
+	public String getEndDate_asDBFormatted() {
+		
+		SimpleDateFormat inputFormatter = new SimpleDateFormat("MM/dd/yyyy"); //format for reading in from the form
+		SimpleDateFormat outputFormatter = new SimpleDateFormat("yyyy-MM-dd"); //format for putting it into the database
+		
+		Date d = null;
+		String date_str = "";
+		if (!endDate.equals("")) {
+			try {
+				d = inputFormatter.parse(endDate);
+				date_str = outputFormatter.format(d);
+			} catch (ParseException e) {
+				System.out.println(e.toString());
+			}
+		}
+		return date_str;
+	}
+
+	public void setEndDate(String endDate) {
+		this.endDate = endDate;
+	}
+
+}

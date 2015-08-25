@@ -1,0 +1,45 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.action.base.EditOfficeVisitBaseAction;
+import edu.ncsu.csc.itrust.beans.ObstericsBean;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.dao.mysql.ICDCodesDAO;
+import edu.ncsu.csc.itrust.dao.mysql.ObstericVisitDAO;
+import edu.ncsu.csc.itrust.exception.DBException;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+
+public class EditObstericVisitAction extends EditOfficeVisitBaseAction  {
+
+	private ObstericVisitDAO obstericVisitDAO;
+	private ICDCodesDAO icdDAO;
+	
+	public EditObstericVisitAction(DAOFactory factory, long hcpid,
+			String pidString, String ovIDString) throws ITrustException {
+		super(factory, hcpid, pidString);
+		obstericVisitDAO = factory.getObstericVisitDAO();
+		icdDAO = factory.getICDCodesDAO();
+	}
+	
+	public EditObstericVisitAction(DAOFactory factory, long hcpid,
+			String pidString) throws ITrustException {
+		super(factory, hcpid, pidString);
+		obstericVisitDAO = factory.getObstericVisitDAO();
+	}
+	
+	public List<ObstericsBean> getObstericVisits() throws DBException {
+		if(isUnsaved()) {
+			return new ArrayList<ObstericsBean>();
+		} else {
+			return obstericVisitDAO.getAllObstetricsVisits(getOvID());
+		}
+	}
+	
+	public void addObstericVisit(ObstericsBean bean) throws ITrustException {
+		verifySaved();
+		obstericVisitDAO.add(bean);
+	}
+
+}

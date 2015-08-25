@@ -1,0 +1,72 @@
+package edu.ncsu.csc.itrust.beans;
+
+public class ObstericsBean {
+	private long Mid = 0;
+	private String weeksPreg = "";
+	private String daysPreg = "";
+	private String bloodPressure = "";
+	private String weight = "";
+	private String FHR = "";
+	private String FHP = "";
+
+	public ObstericsBean() {
+	}
+
+	public long getMid() {
+		return Mid;
+	}
+
+	public void setMid(long mid) {
+		Mid = mid;
+	}
+
+	public String getWeeksPreg() {
+		return weeksPreg;
+	}
+
+	public void setWeeksPreg(String weeksPreg) {
+		this.weeksPreg = weeksPreg;
+	}
+
+	public String getDaysPreg() {
+		return daysPreg;
+	}
+
+	public void setDaysPreg(String daysPreg) {
+		this.daysPreg = daysPreg;
+	}
+
+	public String getBloodPressure() {
+		return bloodPressure;
+	}
+
+	public void setBloodPressure(String bloodPressure) {
+		this.bloodPressure = bloodPressure;
+	}
+
+	public String getWeight() {
+		return weight;
+	}
+
+	public void setWeight(String weight) {
+		this.weight = weight;
+	}
+
+	public String getFHR() {
+		return FHR;
+	}
+
+	public void setFHR(String fHR) {
+		FHR = fHR;
+	}
+
+	public String getFHP() {
+		return FHP;
+	}
+
+	public void setFHP(String fHP) {
+		FHP = fHP;
+	}
+	
+	
+}

@@ -1,0 +1,114 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.TransactionBean;
+import edu.ncsu.csc.itrust.dao.mysql.AuthDAO;
+import edu.ncsu.csc.itrust.enums.Role;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+
+public class TransactionMapBuilderAction {
+	
+	private List <TransactionBean> tbList;
+	private AuthDAO aD;
+	
+	public TransactionMapBuilderAction (List <TransactionBean> list, AuthDAO authD){
+		if(list != null)
+			tbList = list;
+		aD = authD;
+	}
+	
+	/**
+	 * Function that maps the number of logs in the tbList to their logged in roles as Strings
+	 * @return HashMap that maps the role as a String to a number representing the number of logs with that role
+	 */
+	public HashMap<String,Integer> mapLoggedIn(){
+		HashMap <String, Integer> loggedInMap = new HashMap<String, Integer>();
+		for(TransactionBean t: tbList){
+			String loggedInRole = "Not specified";
+
+			
+			// Some roles are not in the database, so these checks are here to prevent null pointer exceptions
+			try{
+				Role loggedInPB = aD.getUserRole(t.getLoggedInMID());
+				
+				
+				loggedInRole = loggedInPB.getUserRolesString();		
+
+			}
+			// Ignore exceptions
+			catch (ITrustException e){}
+
+			
+			if(loggedInMap.containsKey(loggedInRole))
+				loggedInMap.put(loggedInRole,loggedInMap.get(loggedInRole)+1);
+			else
+				loggedInMap.put(loggedInRole,1);
+		}
+		
+		return loggedInMap;
+	}
+	
+	/**
+	 * Function that maps the number of logs in the tbList to their secondary roles as Strings
+	 * @return HashMap that maps the role as a String to a number representing the number of logs with that secondary role
+	 */
+	public HashMap<String, Integer> mapSecondary(){
+		HashMap <String, Integer> secondMap = new HashMap<String, Integer>();
+		for(TransactionBean t: tbList){
+			String secondaryRole = "Not specified";
+			try{
+				Role secondaryPB = aD.getUserRole(t.getSecondaryMID());
+				secondaryRole = secondaryPB.getUserRolesString();
+				
+			}
+			// Ignore exceptions
+			catch(ITrustException e){}
+			
+			if(secondMap.containsKey(secondaryRole))
+				secondMap.put(secondaryRole,secondMap.get(secondaryRole)+1);
+			else
+				secondMap.put(secondaryRole,1);	
+		}
+		
+		return secondMap;
+	}
+	
+	/**
+	 * Function that maps the number of logs in the tbList to their date as a month and year as Strings
+	 * @return HashMap that maps the role as a String to a number representing the number of logs with that date
+	 */
+	public HashMap <String, Integer> mapDates(){
+		HashMap <String, Integer> dateMap = new HashMap <String, Integer>();
+		for(TransactionBean t: tbList){
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(t.getTimeLogged());
+			String date = ""+(cal.get(Calendar.MONTH)+1)+"/"+cal.get(Calendar.YEAR);
+			
+			if(dateMap.containsKey(date))
+				dateMap.put(date,dateMap.get(date)+1);
+			else
+				dateMap.put(date,1);
+		}
+		return dateMap;
+	}
+	
+	/**
+	 * Function that maps the number of logs in the tbList to their type as Strings
+	 * @return HashMap that maps the role as a String to a number representing the number of logs with that type
+	 */
+	public HashMap <String, Integer> mapTypes(){
+		HashMap<String,Integer> typeMap = new HashMap<String,Integer>();
+		for(TransactionBean t: tbList){
+			String trtype = t.getTransactionType().name();			
+			if(typeMap.containsKey(trtype))
+				typeMap.put(trtype,typeMap.get(trtype)+1);
+			else
+				typeMap.put(trtype,1);
+		}
+		return typeMap;
+	}		
+
+}

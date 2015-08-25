@@ -1,0 +1,15 @@
+package edu.ncsu.csc.itrust.action;
+
+import edu.ncsu.csc.itrust.action.base.EditOfficeVisitBaseAction;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+
+public class EditObstericsAction extends EditOfficeVisitBaseAction{
+
+	public EditObstericsAction(DAOFactory factory, long hcpid, String pidString)
+			throws ITrustException {
+		super(factory, hcpid, pidString);
+		// TODO Auto-generated constructor stub
+	}
+
+}

@@ -1,0 +1,182 @@
+
+<%@page import="java.util.List"%>
+<%@page import="java.util.Calendar"%>
+<%@page import="java.util.Date"%>
+<%@page import="java.text.DecimalFormat"%>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="edu.ncsu.csc.itrust.dao.DAOFactory"%>
+<%@page import="edu.ncsu.csc.itrust.BeanBuilder"%>
+<%@page import="edu.ncsu.csc.itrust.exception.FormValidationException"%>
+<%@page import="edu.ncsu.csc.itrust.beans.PersonnelBean"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO"%>
+<%@page import="edu.ncsu.csc.itrust.beans.ObstericsBean"%>
+<%@page import="edu.ncsu.csc.itrust.action.EditObstetricOfficeVisitAction"%>
+<%@page import="edu.ncsu.csc.itrust.beans.forms.EditObstetricForm"%>
+
+<%@include file="/global.jsp" %>
+<%@include file="/header.jsp" %>
+<itrust:patientNav thisTitle="Document Obstetric Record" />
+<%
+
+	boolean createVisit = false;
+	
+	String submittedFormName = request.getParameter("formName");
+	
+	String ovIDString = request.getParameter("ovID");
+	String pidString = (String)session.getAttribute("pid");
+	
+	if (pidString == null || pidString.length() == 0) {
+	    response.sendRedirect("/iTrust/auth/getPatientID.jsp?forward=iTrust/auth/hcp-uap/editObsterics.jsp?ovID=" + ovIDString);
+	    return;
+	}
+	
+	EditObstetricOfficeVisitAction ovaction = null;
+	
+	if(ovIDString == null || ovIDString.length() == 0 || ovIDString.equals("-1")) {
+		// submittedFormName must be: "mainForm" or null
+		ovaction = new EditObstetricOfficeVisitAction(prodDAO, loggedInMID, pidString);
+		createVisit = true;
+	} else {
+		ovaction = new EditObstetricOfficeVisitAction(prodDAO, loggedInMID, pidString, ovIDString);
+	}
+	
+	if (!ovaction.checkvalid()){
+		%>
+		<p style="font-size:20px"><i>No Obstetric Initialization Records for this patient or the latest LMP of this patient is beyond 49 weeks! </i></p>
+	<%
+	}
+	else{
+		String confirm = "";
+	    String warning = "";
+	    if ("mainForm".equals(submittedFormName)) {
+	    	System.out.print("haha");
+	    	System.out.print(request.getParameter("FHR"));
+	    	EditObstetricForm form = new EditObstetricForm();
+	    	form.setvisitDate(new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("MM/dd/yyyy").parse(request.getParameter("visitDate"))));
+	    	form.setWeeksPreg(request.getParameter("PregWeek"));
+	    	form.setDaysPreg(request.getParameter("PregDay"));
+	    	form.setWeight(request.getParameter("Weight"));
+	    	form.setSBloodPressure(request.getParameter("SBloodPressure"));
+	    	form.setDBloodPressure(request.getParameter("DBloodPressure"));
+	    	form.setFHR(request.getParameter("FHR"));
+	    	form.setFHU(request.getParameter("FHU"));
+	        form.setPatientID("" + ovaction.getPid());
+	        try {
+	        	confirm = ovaction.updateInformation(form);
+	        	ovIDString = ""+ovaction.getOvID();
+	        	if (createVisit) {        		
+	       			ovaction.logOfficeVisitEvent(TransactionType.OBSTETRIC_OFFICE_VISIT_CREATE);
+	        		createVisit = false;
+	        	} else {
+	                ovaction.logOfficeVisitEvent(TransactionType.OBSTETRIC_OFFICE_VISIT_EDIT);
+	        	}
+	        } catch (FormValidationException e) {
+	            e.printHTML(pageContext.getOut());
+	            confirm = "Input not valid";
+	        }
+	    } else if (!createVisit) {
+	        ovaction.logOfficeVisitEvent(TransactionType.OBSTETRIC_OFFICE_VISIT_VIEW);
+	    }
+		
+		ObstericsBean ovbean = ovaction.getOfficeVisit();
+		
+		
+	%>
+	
+	<%
+	if (!"".equals(confirm)) {
+		if ("false".equals(request.getParameter("checkPresc"))){ %>
+			<span class="iTrustMessage">Operation Canceled</span>
+		<% } else if ("success".equals(confirm)) { 
+				
+		%>
+			<span class="iTrustMessage">Information Successfully Updated</span>
+	<%	}
+		else { %>
+			<span class="iTrustError"><%= StringEscapeUtils.escapeHtml("" + (confirm)) %></span>		
+	<%	}
+	}	
+	%>
+	<div align=center id="general">
+	<form action="editObsterics.jsp" method="post" id="mainForm">
+	<input type="hidden" name="formIsFilled" value="true" />
+	<input type="hidden" name="formName" value="mainForm" />
+	<input type="hidden" name="ovID" value="<%= StringEscapeUtils.escapeHtml("" + (ovaction.getOvID())) %>" />
+	
+	<table class="fTable" align="center">
+		<tr>
+        	<th colspan="8" style="text-align: center;">Obstetrics Office Visit Record</th>
+	    </tr>
+		<tr>
+			<td align="center" colspan="2">Visit Date:  
+				<input name="visitDate"
+				value="<%= StringEscapeUtils.escapeHtml("" + (new SimpleDateFormat("MM/dd/yyyy").format(ovbean.getvisitDate()))) %>" style="width: 100px" type="text"
+				maxlength="10" 
+				readOnly="true"/>
+			</td>
+			<td align="center" colspan="2">Pregnant week(s):  
+				<input name="PregWeek"
+				value="<%= StringEscapeUtils.escapeHtml("" + (ovbean.getWeeksPreg())) %>" style="width: 50px" type="text"
+				maxlength="10" 
+				readOnly="true"/>
+			</td>
+			<td align="center" colspan="2">Pregnant day(s):  
+				<input name="PregDay"
+				value="<%= StringEscapeUtils.escapeHtml("" + (ovbean.getDaysPreg())) %>" style="width: 50px" type="text"
+				maxlength="10" 
+				readOnly="true"/>
+			</td>
+			<td align="center" colspan="2">Weight: 
+				<input name="Weight"
+				value="<%= StringEscapeUtils.escapeHtml("" + (ovbean.getWeight())) %>" style="width: 50px" type="text"
+				maxlength="10" 
+				> lbs.
+			</td>
+			<td align="center" colspan="2">Systolic Blood pressure:  
+				<input name="SBloodPressure"
+				value="<%= StringEscapeUtils.escapeHtml("" + (ovbean.getSBloodPressure())) %>" style="width: 50px" type="text"
+				maxlength="10" 
+				> mmHg.
+			</td>
+			<td align="center" colspan="2">Diastolic Blood pressure:  
+				<input name="DBloodPressure"
+				value="<%= StringEscapeUtils.escapeHtml("" + (ovbean.getDBloodPressure())) %>" style="width: 50px" type="text"
+				maxlength="10" 
+				> mmHg.
+			</td>
+			<td align="center" colspan="2">Fetal heart rate:  
+				<input name="FHR"
+				value="<%= StringEscapeUtils.escapeHtml("" + (ovbean.getFHR())) %>" style="width: 50px" type="text"
+				maxlength="10" 
+				> bpm.
+			</td>
+			<td align="center" colspan="2">Fundal height of the uterus:  
+				<input name="FHU"
+				value="<%=StringEscapeUtils.escapeHtml("" + (ovbean.getFHU()))%>" style="width: 50px" type="text"
+				maxlength="10" 
+				> cm.
+			</td>
+		</tr>
+		<tr>
+	   <td colspan="2" align="center">
+		<%
+			if (createVisit) {
+		%>
+		    <input type="submit" name="update" id="update" value="Create" >
+		<%
+			} else {
+		%>
+		    <input type="submit" name="update" id="update" value="Update" >
+		<%
+			}
+		%>
+		</td>
+    </tr>
+	</table>
+	</form>
+	</div>
+		
+	<%
+	}
+ 
+%>

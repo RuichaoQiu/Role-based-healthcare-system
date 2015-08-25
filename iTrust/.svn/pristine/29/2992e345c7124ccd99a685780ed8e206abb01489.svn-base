@@ -1,0 +1,62 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.TransactionBean;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO;
+import edu.ncsu.csc.itrust.dao.mysql.TransactionDAO;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+import edu.ncsu.csc.itrust.exception.DBException;
+
+public class FilterTransactionAction {
+	private PersonnelDAO personnelDAO;
+	private TransactionDAO transactionDAO;
+	
+	public FilterTransactionAction (DAOFactory factory){
+		this.personnelDAO = factory.getPersonnelDAO();
+		this.transactionDAO = factory.getTransactionDAO();
+	}
+	
+	/**
+	 * 
+	 * @param loggedInRole - String of the wanted role for the logged in user, use "All" for any role
+	 * @param secondaryRole - String of the wanted role for the secondary user, use "All" for any role
+	 * @param start - Timestamp of the start time to search for TODO create a protocol for handling any start time
+	 * @param end - Timestamp of the end time to search for TODO create a protocol for handling any start time
+	 * @param type - TransactionType - type to be searched for TODO create a protocol for handling any TransactionType
+	 * @return A List <TransactionBean> of all of the beans that pass the filter parameters
+	 * @throws DBException
+	 */
+	public List <TransactionBean> FilterAll (String loggedInRole, String secondaryRole, Timestamp start, Timestamp end, TransactionType type) throws DBException{
+		List <TransactionBean> unfiltered = transactionDAO.getAllTransactions();
+		List <TransactionBean> filtered = new ArrayList <TransactionBean>();
+		
+		for(TransactionBean t: unfiltered){
+			// Check the logged in role
+			if ( loggedInRole.equals("All") || (personnelDAO.getPersonnel(t.getLoggedInMID())).getRoleString().equals(loggedInRole)){
+						
+				// Check the secondary role
+				if ( secondaryRole.equals("All") || (personnelDAO.getPersonnel(t.getSecondaryMID())).getRoleString().equals(secondaryRole)){
+					
+					// Check the Timestamps
+					// TODO we need to figure out a protocol for handling the any time case (It seems like using the earliest and latest times would work
+					Timestamp logged_time = t.getTimeLogged();
+					if (logged_time.before(end) && logged_time.after(start)){
+			
+						// Check the transaction type
+						//TODO I'm not sure if this check will work
+						if(t.getTransactionType() == type){
+							filtered.add(t);
+						}
+					}
+				}
+			}
+		}
+		
+		return filtered;
+	}
+
+}

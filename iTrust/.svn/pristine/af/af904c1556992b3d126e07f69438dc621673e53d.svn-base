@@ -1,0 +1,148 @@
+<%@page errorPage="/auth/exceptionHandler.jsp" %>
+
+<%@page import="java.net.URLEncoder" %>
+<%@page import="java.util.List"%>
+<%@page import="edu.ncsu.csc.itrust.*"%>
+<%@page import="edu.ncsu.csc.itrust.dao.DAOFactory"%>
+<%@page import="edu.ncsu.csc.itrust.beans.HospitalBean"%>
+<%@page import="edu.ncsu.csc.itrust.action.UpdateHospitalListAction"%>
+<%@page import="edu.ncsu.csc.itrust.exception.FormValidationException"%>
+
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.HospitalsDAO"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PatientDAO"%>
+<%@page import="edu.ncsu.csc.itrust.beans.WardBean"%>
+<%@page import="edu.ncsu.csc.itrust.beans.WardRoomBean"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.WardDAO"%>
+<%@page import="edu.ncsu.csc.itrust.beans.PersonnelBean"%>
+
+<%@page import="edu.ncsu.csc.itrust.action.EditPersonnelAction"%>
+<%@page import="edu.ncsu.csc.itrust.action.PatientRoomAssignmentAction"%>
+
+<%@include file="/global.jsp" %>
+
+<%
+pageTitle = "iTrust - Request Biosurveillance";
+%>
+
+<%@include file="/header.jsp" %>
+
+<body>
+<h1>Request Biosurveillance</h1>
+<form name = "request_bio"> 
+<input type="hidden" name="request_bio"> 
+<table class="fTable" align=center">
+	<tr>
+		<th align=center colspan = '4'>
+			Malaria
+		</th>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">
+			Diagnosis:
+		</td>
+		<td>
+			<select name="malariaDiagnosis">
+				<option value="all">All</option>
+				<option value="something">Something</option>
+			</select>
+		</td>
+		<td class="subHeaderVertical">
+			Zip Code:
+		</td>
+		<td>
+			<input type=text name="malariaZipCode">
+		</td>
+	</tr>
+	<tr>
+		<td>Date:</td>
+		<td>
+			<input name="malariaDate">
+			<input type=button value="Select Date" onclick="displayDatePicker('startDate');">
+		</td>
+		<td colspan="2">
+			<input type="submit" align="right" name="analyze_malaria" id="analyze_malaria"
+			style="font-size: 10pt; font-weight: bold;"
+			value="Analyze" />
+		</td>
+	</tr>
+</table>
+<br> <br>
+<table class="fTable" align=center">
+	<tr>
+		<th align=center colspan = '4'>
+			Influenza
+		</th>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">
+			Diagnosis:
+		</td>
+		<td>
+			<select name="influenzaDiagnosis">
+				<option value="all">All</option>
+				<option value="something">Something</option>
+			</select>
+		</td>
+		<td class="subHeaderVertical">
+			Zip Code:
+		</td>
+		<td>
+			<input type=text name="influenzaZipCode">
+		</td>
+	</tr>
+	<tr>
+		<td>Date:</td>
+		<td>
+			<input name="influenzaDate">
+			<input type=button value="Select Date" onclick="displayDatePicker('startDate');">
+		</td>
+		<td colspan="2">
+			<input type="submit" align="right" name="analyze_malaria" id="analyze_malaria"
+			style="font-size: 10pt; font-weight: bold;"
+			value="Analyze" />
+		</td>
+	</tr>
+</table>
+<br> <br>
+<table class="fTable" align=center">
+	<tr>
+		<th align=center colspan = '4'>
+			Recent Trends
+		</th>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">
+			Diagnosis Code:
+		</td>
+		<td>
+			<select name="recentDiagnosis">
+				<option value="all">000</option>
+				<option value="something">001</option>
+			</select>
+		</td>
+		<td class="subHeaderVertical">
+			Zip Code:
+		</td>
+		<td>
+			<input type=text name="recentZipCode">
+		</td>
+	</tr>
+	<tr>
+		<td>Date:</td>
+		<td>
+			<input name="recentDate">
+			<input type=button value="Select Date" onclick="displayDatePicker('startDate');">
+		</td>
+		<td colspan="2">
+			<input type="submit" align="right" name="analyze_malaria" id="analyze_malaria"
+			style="font-size: 10pt; font-weight: bold;"
+			value="Analyze" />
+		</td>
+	</tr>
+</table>
+
+</form>
+
+</body>
+<%@include file="/footer.jsp" %>

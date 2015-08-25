@@ -1,0 +1,101 @@
+
+<%@page import="edu.ncsu.csc.itrust.enums.TransactionType"%>
+<%@page import="edu.ncsu.csc.itrust.action.ViewInitRecordsHistoryAction"%>
+<%@page import="edu.ncsu.csc.itrust.beans.InitRecord"%>
+<%@page import="edu.ncsu.csc.itrust.action.EditHealthHistoryAction"%>
+
+<% { %>
+
+<%
+
+String updateMessage = "";
+String updateErrorMessage = "";
+
+if (pidString == null || 1 > pidString.length()) {
+	response.sendRedirect("/iTrust/auth/getPatientID.jsp?forward=hcp-uap/editObsterics.jsp");
+   	return;
+}
+
+//Create ViewInitialRecordsHistoryAction object to interact with patient's historical Initial metric history
+ViewInitRecordsHistoryAction historyAction = new ViewInitRecordsHistoryAction(prodDAO,pidString,loggedInMID.longValue());
+EditHealthHistoryAction action = new EditHealthHistoryAction(prodDAO,loggedInMID.longValue(), pidString);
+
+//Get the patient's name
+String patientName = historyAction.getPatientName();
+String gender = historyAction.getPatientGender();
+long pid = action.getPid();
+
+//Get all of the patient's Initial records
+List<InitRecord> iRecords = historyAction.getAllPatientInitRecords();
+List<HealthRecord> hRecords = action.getAllHealthRecords(pid);
+%>
+
+
+<div align="center">
+
+<form action="editOfficeVisit.jsp" method="post" id="obstericsForm">
+
+<input type="hidden" name="formIsFilled" value="true" />
+<input type="hidden" name="formName" value="obstericsForm" />
+
+<table class="fTable" align="center">
+    <tr>
+        <th colspan="5"><a href="#" class="topLink">[Top]</a>Obsterics Data</th>
+    </tr>
+    <tr class="subHeader">
+			<td>Weeks Pregnant as of Office Visit Date</td>
+			<td>Weight</td>
+			<td>Blood Pressure</td>
+			<td>FHR</td>
+			<td>FHU</td>
+    </tr>
+
+    <%if( iRecords.isEmpty() ){ %>
+    <tr>
+        <td  colspan="5" style="text-align: center;">No obsterics on record</td>
+    </tr>
+    <%} else { 
+    		for( ObstericsBean ob : iRecords ) { 
+    				
+    			%>
+        			
+    	    	<tr>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getWeeksPreg() + " weeks " + ob.getDaysPreg() + " days") %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getWeight() + " lbs.") %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getBloodPressure()) %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getFHR() + " bpm") %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getFHU() + " cm") %></td>
+    			</tr>
+
+        		<%
+    		}
+        }%>
+    <tr>
+        <th colspan="5" style="text-align: center;">New</th>
+    </tr>
+    <tr>
+    	<td class="subHeaderVertical">Date of Visit:</td>
+		<td>
+		  <input name="visitDate" value="<%= StringEscapeUtils.escapeHtml("" + (ovbean.getVisitDateStr())) %>" <%= disableMainformString %>/>
+		  <input type="button" value="Select Date" onclick="displayDatePicker('visitDate');" <%= disableMainformString %>/>
+		</td>
+		
+		<td class="subHeader">Fetal Heart Rate (FHR):</td>
+		<td ><input name="FHR"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+			
+		<td class="subHeader">Fundamental Height of Uterus (FHU):</td>
+		<td ><input name="FHU"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+    </tr>
+</table>
+
+</form>
+
+</div>
+
+
+<% } %>
+

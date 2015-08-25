@@ -1,0 +1,108 @@
+<%@taglib uri="/WEB-INF/tags.tld" prefix="itrust" %>
+<%@page errorPage="/auth/exceptionHandler.jsp" %>
+<%@page import="java.util.List" %>
+<%@page import="java.text.DateFormat" %>
+<%@page import="edu.ncsu.csc.itrust.action.ViewImmunizationReportAction" %>
+<%@page import="edu.ncsu.csc.itrust.action.EditPatientAction" %>
+<%@page import="edu.ncsu.csc.itrust.beans.PatientBean" %>
+<%@page import="edu.ncsu.csc.itrust.beans.ProcedureBean" %>
+<%@page import="edu.ncsu.csc.itrust.beans.RequiredProceduresBean" %>
+
+<%@include file="/global.jsp" %>
+
+<%
+pageTitle = "iTrust - View Patient Immunization Records";
+%>
+
+<%@include file="/header.jsp" %>
+
+<itrust:patientNav thisTitle="Immunization Records" />
+
+
+<%
+	/* Require a Patient ID first */
+	String pidString = (String) session.getAttribute("pid");
+	if (pidString == null || 1 > pidString.length()) {
+		response.sendRedirect("/iTrust/auth/getPatientID.jsp?forward=/iTrust/auth/hcp-uap/InitRecords.jsp");
+		return;
+	}
+	
+	
+%>
+
+<div align="center">
+<br>
+
+<style type="text/css" media="print">
+       #iTrustHeader2, #iTrustMenu, #iTrustFooter {
+               display:none !important;
+       }
+       #container2 {
+       
+               background-image:none !important;
+       }
+       .navigation{
+       		   display:none !important;
+       }
+       body {
+			font-family: verdana, arial, sans-serif ;
+			font-color: #0000;
+			font-size: 12px ;
+	   }
+ 
+	   th,td {
+	   		font-color: #0000;
+			padding: 4px 4px 4px 4px ;
+	   }
+ 
+		th {
+			font-color: #0000;
+			border-bottom: 2px solid #333333 ;
+		}
+ 
+		td {
+			border-bottom: 1px dotted #999999 ;
+			font-color: #0000;
+		}
+ 
+		tfoot td {
+			border-bottom-width: 0px ;
+			font-color: #0000;
+			border-top: 2px solid #333333 ;
+			padding-top: 20px ;
+		}
+		
+		.tempTable {
+				position: relative;
+				left : 600px;
+				top: -150px;
+
+		}
+
+</style>
+
+<div class = "tempTable">
+	<table border='8'>
+		<tr>
+			<th>MID</th>
+			<th>Name</th>
+	    	<th>LMP</th>
+	    	<th>EDD</th>
+	    	<th>Time Length</th>
+	    	<th>Prior Pregnancies</th>
+	    	<th>Notes</th>
+	 	</tr>
+		<tr>
+			<td>0</td>
+		    <td>Random Person</td>
+		    <td>Test</td>
+		    <td>Test</td>
+		    <td>Test</td>
+		    <td>Test</td>
+		    <td>Test</td>
+		</tr>
+	</table>
+</div>
+
+</div>
+<%@include file="/footer.jsp"%>

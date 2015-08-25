@@ -1,0 +1,111 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.TransactionBean;
+import edu.ncsu.csc.itrust.dao.mysql.AuthDAO;
+import edu.ncsu.csc.itrust.dao.mysql.TransactionDAO;
+import edu.ncsu.csc.itrust.datagenerators.TestDataGenerator;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+import edu.ncsu.csc.itrust.testutils.TestDAOFactory;
+import junit.framework.TestCase;
+/**
+ * 
+ * @author Noah Malmed
+ * The following is the JUnit test for the FilterTransaction Action
+ * 
+ */
+
+//************************************Test Cases:********************************************
+	/*
+	 * 1) Specific role for the logged in user, All for other parameters
+	 * 2) Specific role for the secondary user, All for other parameters
+	 * 3) Specific Start time, All for other parameters
+	 * 4) Specific End time, All for other parameters
+	 * 6) Specific transaction type, all for other parameters
+	 */
+	//*******************************************************************************************
+public class FilterTransactionActionTest extends TestCase{
+	private FilterTransactionAction fta = new FilterTransactionAction(TestDAOFactory.getTestInstance());
+	private TestDataGenerator gen;
+
+	@Override
+	protected void setUp() throws Exception {
+		gen = new TestDataGenerator();
+		gen.clearAllTables();
+		gen.transactionLog3();
+		gen.patient1();
+		gen.patient2();
+		gen.hcp0();
+		gen.hcp3();
+		gen.uap1();
+		gen.er4();
+	}
+	
+	public void testLoggedInRole() throws Exception {
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("01/01/0000");
+		long min_date = date.getTime();
+		
+		List <TransactionBean> filtered = 
+				fta.FilterAll ("patient", "all", new Timestamp(min_date), new Timestamp(Long.MAX_VALUE), TransactionType.GENERIC_CODE);
+		assertEquals(1, filtered.size() );
+		assertEquals(2, filtered.get(0).getLoggedInMID());
+	}
+	
+	public void testSecondaryRole() throws Exception {
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("01/01/0000");
+		long min_date = date.getTime();
+		
+		List <TransactionBean> filtered = 
+				fta.FilterAll ("all", "patient", new Timestamp(min_date), new Timestamp(Long.MAX_VALUE), TransactionType.GENERIC_CODE);
+		assertEquals(8, filtered.size() );
+	}
+	
+	public void testStartDate() throws Exception {
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("10/10/2008");
+		long min_date = date.getTime();
+		
+		List <TransactionBean> filtered = 
+				fta.FilterAll ("all", "patient", new Timestamp(min_date), new Timestamp(Long.MAX_VALUE), TransactionType.GENERIC_CODE);
+		assertEquals(3, filtered.size() );
+		assertEquals(9000000000L, filtered.get(0).getLoggedInMID());
+		assertEquals(9000000006L, filtered.get(1).getLoggedInMID());
+		assertEquals(2, filtered.get(2).getLoggedInMID());
+	}
+	
+	public void testEndDate() throws Exception {
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("01/01/0001");
+		long min_date = date.getTime();
+		
+		date = dateFormat.parse("05/05/2008");
+		long end_date = date.getTime();
+		
+		List <TransactionBean> filtered = 
+				fta.FilterAll ("all", "patient", new Timestamp(min_date), new Timestamp(end_date), TransactionType.GENERIC_CODE);
+		assertEquals(1, filtered.size() );
+		assertEquals(9000000003L, filtered.get(0).getLoggedInMID());
+	}
+	
+	
+	public void testTransactionType() throws Exception {
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("01/01/0000");
+		long min_date = date.getTime();
+		
+		List <TransactionBean> filtered = 
+				fta.FilterAll ("all", "patient", new Timestamp(min_date), new Timestamp(Long.MAX_VALUE), TransactionType.OFFICE_VISIT_EDIT);
+		assertEquals(2, filtered.size() );
+		assertEquals(9000000000L, filtered.get(0).getLoggedInMID());
+		assertEquals(9000000003L, filtered.get(1).getLoggedInMID());
+	}	
+
+}

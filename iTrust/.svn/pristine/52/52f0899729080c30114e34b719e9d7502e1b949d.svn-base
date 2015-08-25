@@ -1,0 +1,191 @@
+<%@page errorPage="/auth/exceptionHandler.jsp"%>
+
+<%@page import="java.util.List"%>
+
+<%@page import="edu.ncsu.csc.itrust.action.ViewMyMessagesAction"%>
+<%@page import="edu.ncsu.csc.itrust.beans.MessageBean"%>
+<%@page import="edu.ncsu.csc.itrust.dao.DAOFactory"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PatientDAO"%>
+
+<%@include file="/global.jsp" %>
+
+<%
+pageTitle = "iTrust - View My Message ";
+session.setAttribute("outbox",false);
+session.setAttribute("isHCP",userRole.equals("hcp"));
+loggingAction.logEvent(TransactionType.INBOX_VIEW, loggedInMID.longValue(), 0L, "");
+
+
+//START MESSAGE FILTER FORM HANDLING
+String formError = ""; 
+MessageFilterDAO messageFilterDAO = new MessageFilterDAO(prodDAO);
+MessageFilterBean messageFilter = new MessageFilterBean();
+
+String formIsFilled = request.getParameter("filterIsFilled");
+String buttonClicked = request.getParameter("buttonClicked");
+
+long newFilter_mid = -1;
+String newFilter_sender = "";
+String newFilter_subject = "";
+String newFilter_contains = "";
+String newFilter_notContains = "";
+String newFilter_startDate = "";
+String newFilter_endDate = "";
+
+if (buttonClicked != null && buttonClicked.equals("saveButton")) {
+	
+	//save a new filter and use it
+
+	//grab parameters
+	newFilter_mid = loggedInMID.longValue();
+	newFilter_sender = request.getParameter("sender");
+	newFilter_subject = request.getParameter("subject");
+	newFilter_contains = request.getParameter("contains");
+	newFilter_notContains = request.getParameter("notContains");
+	newFilter_startDate = request.getParameter("startDate");
+	newFilter_endDate = request.getParameter("endDate");
+	
+	//clean up parameters
+	SimpleDateFormat inputFormatter = new SimpleDateFormat("MM/dd/yyyy"); //format for reading in from the form
+			
+	//clean up and check startDate
+	if (newFilter_startDate != "") {
+		Date newFilter_startDate_asDate = null;
+		if (formError == "") { //we have no errors so far, so we keep going
+			try {
+				newFilter_startDate_asDate = inputFormatter.parse(newFilter_startDate);
+		 
+			} catch (Exception e) {
+				formError = "Invalid date format. Please try again.";
+			}
+		}
+	}
+			
+	
+	//clean up and check endDate
+	if (newFilter_endDate != "") {
+		Date newFilter_endDate_asDate = null;
+		if (formError == "") { //we have no errors so far, so we keep going
+			try {
+				newFilter_endDate_asDate = inputFormatter.parse(newFilter_endDate);
+		 
+			} catch (Exception e) {
+				formError = "Invalid date format. Please try again.";
+			}
+		}
+	}
+	
+	
+	
+	//save the filter
+	MessageFilterBean bean = new MessageFilterBean();
+	if (formError == "") { //we have no errors so far, so we keep going
+		bean.setMid(newFilter_mid);
+		bean.setSender(newFilter_sender);
+		bean.setSubject(newFilter_subject);
+		bean.setContains(newFilter_contains);
+		bean.setNotContains(newFilter_notContains);
+		bean.setStartDate(newFilter_startDate);
+		bean.setEndDate(newFilter_endDate);
+		messageFilterDAO.saveMessageFilter(newFilter_mid, bean);
+	}
+	
+	
+	//format the formError for display
+	if (formError != "") {
+		formError = "<br/><p style=\"font-size:20px;color:red;text-align:center;\"><i>Error: " + formError + "</i></p>";
+	}
+	
+	//load saved filter
+	messageFilter = messageFilterDAO.getSavedMessageFilter(loggedInMID.longValue());
+	
+	
+} //end if: saveButton
+
+else if (buttonClicked != null && buttonClicked.equals("testButton")) {
+	
+	//use a temporary filter
+
+	//grab parameters
+	newFilter_mid = loggedInMID.longValue();
+	newFilter_sender = request.getParameter("sender");
+	newFilter_subject = request.getParameter("subject");
+	newFilter_contains = request.getParameter("contains");
+	newFilter_notContains = request.getParameter("notContains");
+	newFilter_startDate = request.getParameter("startDate");
+	newFilter_endDate = request.getParameter("endDate");
+	
+	//clean up parameters
+	SimpleDateFormat inputFormatter = new SimpleDateFormat("MM/dd/yyyy"); //format for reading in from the form
+			
+	//clean up and check startDate
+	if (newFilter_startDate != "") {
+		Date newFilter_startDate_asDate = null;
+		if (formError == "") { //we have no errors so far, so we keep going
+			try {
+				newFilter_startDate_asDate = inputFormatter.parse(newFilter_startDate);
+		 
+			} catch (Exception e) {
+				formError = "Invalid date format. Please try again.";
+			}
+		}
+	}
+			
+	
+	//clean up and check endDate
+	if (newFilter_endDate != "") {
+		Date newFilter_endDate_asDate = null;
+		if (formError == "") { //we have no errors so far, so we keep going
+			try {
+				newFilter_endDate_asDate = inputFormatter.parse(newFilter_endDate);
+		 
+			} catch (Exception e) {
+				formError = "Invalid date format. Please try again.";
+			}
+		}
+	}
+	
+	
+	if (formError != "") {
+		
+		//format the error for display
+		formError = "<br/><p style=\"font-size:20px;color:red;text-align:center;\"><i>Error: " + formError + "</i></p>";
+		
+		//load saved filter instead
+		messageFilter = messageFilterDAO.getSavedMessageFilter(loggedInMID.longValue());
+	}
+	else {
+		//use the temporary filter
+		messageFilter.setMid(newFilter_mid);
+		messageFilter.setSender(newFilter_sender);
+		messageFilter.setSubject(newFilter_subject);
+		messageFilter.setContains(newFilter_contains);
+		messageFilter.setNotContains(newFilter_notContains);
+		messageFilter.setStartDate(newFilter_startDate);
+		messageFilter.setEndDate(newFilter_endDate);
+		
+	}
+
+} //end if: testButton
+
+else { //cancelButton or None
+	
+	//load saved filter
+	messageFilter = messageFilterDAO.getSavedMessageFilter(loggedInMID.longValue());
+	
+} //end else: cancelButton or None
+	
+
+//END MESSAGE FILTER FORM HANDLING
+
+%>
+
+<%@include file="/header.jsp" %>
+
+<div align=center>
+	<h2>My Messages</h2>
+	<%@include file="/auth/hcp-patient/mailbox.jsp" %>
+
+</div>
+
+<%@include file="/footer.jsp" %>

@@ -1,0 +1,57 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.DeathStatsBean;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.dao.mysql.DeathStatsDAO;
+import edu.ncsu.csc.itrust.enums.Gender;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+import edu.ncsu.csc.itrust.exception.DBException;
+
+/**
+ * ViewDeathStatsAction handles interaction between user input and the death stats dao
+ */
+public class ViewDeathStatsAction {
+	private DeathStatsDAO deathStats;
+	private EventLoggingAction ela;
+
+
+	/**
+	 * ViewDeathStatsAction simply initializes the DAOs.
+	 * 
+	 * @param fact
+	 *            The dao factory that will create the DAOs
+	 */
+	public ViewDeathStatsAction(DAOFactory fact) {
+		deathStats = fact.getDeathStatsDAO();
+		ela = new EventLoggingAction(fact);
+
+	}
+
+	/**	
+	 * getStats returns a list of top deaths
+	 * 
+	 * @param hcpMID This is the mid of the hcp to find patients from, if 
+	 * @param gender of the patient, this is an Enum
+	 * @param startDate the year to start from 01/01/<startDate>
+	 * @param endDate the year to end the search on 12/31/<endDate>
+	 * @param limit the number of results to return
+	 * @return A list of top <limit> deaths
+	 */
+	public List<DeathStatsBean> getStats(long hcpMID, Gender gender,
+			int startDate, int endDate, int limit) {
+		List<DeathStatsBean> result = null;
+
+		try {
+			result = deathStats.getTopCauses(hcpMID, gender, startDate,
+					endDate, limit);
+			ela.logEvent(TransactionType.DEATH_TRENDS_VIEW,  hcpMID, hcpMID, null);
+		} catch (DBException e) {
+			e.printStackTrace();
+		}
+
+		return result;
+	}
+
+}

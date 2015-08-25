@@ -1,0 +1,52 @@
+package edu.ncsu.csc.itrust.http;
+
+import com.meterware.httpunit.WebConversation;
+import com.meterware.httpunit.WebForm;
+import com.meterware.httpunit.WebResponse;
+import com.meterware.httpunit.WebTable;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+
+/**
+ * ViewHealthRecordsHistoryTest
+ */
+public class ViewInitRecordsHistoryTest extends iTrustHTTPTest {
+	
+	@Override
+	protected void setUp() throws Exception{
+		super.setUp();
+		gen.clearAllTables();
+		gen.standardData();
+	}
+	
+	/**
+	 * testViewHealthMetricsByHCP
+	 * @throws Exception
+	 */
+	public void testShowInitRecords() throws Exception{
+		//Login as HCP Shelly Vang
+		WebConversation wc = login("9000000000", "pw");	
+		WebResponse wr = wc.getCurrentPage();
+		assertLogged(TransactionType.HOME_VIEW, 9000000000L, 0L, "");
+		
+		//Click Basic Health Information link
+		wr = wr.getLinkWith("Initialization Records").click();
+		//Search for Caldwell Hudson (MID 102)
+		WebForm patientForm = wr.getForms()[0];
+		patientForm.getScriptableObject().setParameterValue("UID_PATIENTID", "1");
+		//Click on first MID button
+		patientForm.getButtons()[1].click();
+		wr = wc.getCurrentPage();
+		//Verify Basic Health Information page
+		assertEquals(ADDRESS + "auth/hcp-uap/InitRecords.jsp", wr.getURL().toString());
+
+		//Verify baby health record table displays
+		WebTable hrTable = wr.getTableWithID("InitRecordsTable");
+		//Verify the table has the provided information: Header, field descriptions, 5 rows of health records
+		assertEquals(3, hrTable.getRowCount());
+		//Verify table contents
+		
+		//Row 1 values
+		//Office visit date
+		assertEquals("1", hrTable.getCellAsText(2, 0));			
+	}
+}

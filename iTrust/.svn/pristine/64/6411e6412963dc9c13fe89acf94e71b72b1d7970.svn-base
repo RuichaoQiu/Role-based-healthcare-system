@@ -1,0 +1,55 @@
+package edu.ncsu.csc.itrust.beans.loaders;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.ObstericsBean;
+import edu.ncsu.csc.itrust.beans.OfficeVisitBean;
+
+/**
+ * A loader for OfficeVisitBeans.
+ * 
+ * Loads in information to/from beans using ResultSets and PreparedStatements. Use the superclass to enforce consistency. 
+ * For details on the paradigm for a loader (and what its methods do), see {@link BeanLoader}
+ */
+public class ObstericsLoader implements BeanLoader<ObstericsBean> {
+	/* (non-Javadoc)
+	 * @see edu.ncsu.csc.itrust.beans.loaders.BeanLoader#loadList(java.sql.ResultSet)
+	 */
+	public List<ObstericsBean> loadList(ResultSet rs) throws SQLException {
+		List<ObstericsBean> list = new ArrayList<ObstericsBean>();
+		while (rs.next()) {
+			list.add(loadSingle(rs));
+		}
+		return list;
+	}
+
+	/* (non-Javadoc)
+	 * @see edu.ncsu.csc.itrust.beans.loaders.BeanLoader#loadSingle(java.sql.ResultSet)
+	 */
+	public ObstericsBean loadSingle(ResultSet rs) throws SQLException {
+		ObstericsBean ov = new ObstericsBean(rs.getInt("ID"));
+		ov.setvisitDate(new SimpleDateFormat("yyyy-MM-dd").format(new Date(rs.getDate("visitDate").getTime())));
+		ov.setDaysPreg(rs.getString("daysPreg"));
+		ov.setWeeksPreg(rs.getString("weeksPreg"));
+		ov.setWeight(rs.getString("weight"));
+		ov.setSBloodPressure(rs.getString("SBloodPressure"));
+		ov.setDBloodPressure(rs.getString("DBloodPressure"));
+		ov.setFHR(rs.getString("FHR"));
+		ov.setFHU(rs.getString("FHU"));
+		ov.setPatientID(rs.getLong("PatientID"));
+		return ov;
+	}
+
+	/* (non-Javadoc)
+	 * @see edu.ncsu.csc.itrust.beans.loaders.BeanLoader#loadParameters(java.sql.PreparedStatement, java.lang.Object)
+	 */
+	public PreparedStatement loadParameters(PreparedStatement ps, ObstericsBean p) throws SQLException {
+		throw new IllegalStateException("unimplemented!");
+	}
+}

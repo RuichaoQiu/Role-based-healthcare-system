@@ -1,0 +1,342 @@
+<%@page import="java.util.Map"%>
+<%@page import="org.apache.tomcat.util.buf.TimeStamp"%>
+<%@page import="java.sql.Timestamp"%>
+<%@page import="java.text.DateFormat"%>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="java.util.Date"%>
+<%@page import="java.util.Set" %>
+<%@page import="java.util.Iterator" %>
+<%@page import="java.util.Map" %>
+<%@page import="java.util.Calendar"%>
+<%@page import="java.util.HashMap" %>
+<%@page import="edu.ncsu.csc.itrust.exception.ITrustException" %>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.AuthDAO" %>
+<%@page import="edu.ncsu.csc.itrust.action.FilterTransactionAction"%>
+<%@page import="edu.ncsu.csc.itrust.enums.TransactionType"%>
+<%@page import="edu.ncsu.csc.itrust.dao.DAOFactory"%>
+<%@page import="edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO"%>
+<%@page import="edu.ncsu.csc.itrust.beans.PersonnelBean"%>
+<%@page import="edu.ncsu.csc.itrust.enums.Role"%>
+<%@page import="java.util.List"%>
+<%@page import="edu.ncsu.csc.itrust.beans.TransactionBean"%>
+<%@page import="org.apache.commons.lang.StringEscapeUtils"%>
+<%@page import="edu.ncsu.csc.itrust.action.TransactionMapBuilderAction"%>
+<%@include file="/global.jsp" %>
+
+<%
+pageTitle = "iTrust - Transaction Logs";
+%>
+<%@include file="/header.jsp" %>
+<body>
+<%
+	String logInRole = request.getParameter("loggedInRole");
+	String secondRole = request.getParameter("secondRole");
+	String startDate = request.getParameter("startDate");
+	String endDate = request.getParameter("endDate");
+	String transType = request.getParameter("transactionType");
+	if(startDate==null || startDate=="")
+		startDate = "01/01/1980";
+	if(endDate==null || endDate=="")
+		endDate = "01/01/9999";
+	int transactionType = 0;
+	TransactionType type = TransactionType.GENERIC_CODE;
+	if(transType!=null && !transType.equals("all")){
+		transactionType = Integer.parseInt(transType);
+		type = TransactionType.parse(transactionType);
+	}
+	DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+	Timestamp start = new Timestamp(dateFormat.parse(startDate).getTime());
+	Timestamp end = new Timestamp(dateFormat.parse(endDate).getTime());
+	String view = request.getParameter("view");
+	String summary = request.getParameter("summary");
+	//If user clicked "View"
+	if(view!=null){
+		FilterTransactionAction filter = new FilterTransactionAction(DAOFactory.getProductionInstance());
+		List<TransactionBean> list = filter.FilterAll(logInRole,secondRole,start,end,type);
+%>
+<h1>Transaction Logs View</h1>
+<%
+	if(list.isEmpty()){
+	%>
+<h2><font color="red">No Entries Found</font></h2>
+<%		
+	}
+	else{ %>
+<table border= 1>
+	<tr>
+		<th>Time Logged</th>
+		<th>Type</th>
+		<th>Logged in User Role</th>
+		<th>Secondary Role</th>
+		<th>Additional Info</th>
+	</tr>
+	
+<%		
+		for(TransactionBean t : list){
+			AuthDAO pD =  DAOFactory.getProductionInstance().getAuthDAO();
+			String loggedInRole = "Not specified";
+			String secondaryRole = "Not specified";
+			try{
+				Role loggedInPB = pD.getUserRole(t.getLoggedInMID());
+				
+				// Some roles are not in the datbase, so these checks are here to prevent null pointer exceptions
+				loggedInRole = loggedInPB.getUserRolesString();		
+
+			}
+			catch (ITrustException e){
+				
+			}
+			try{
+				Role secondaryPB = pD.getUserRole(t.getSecondaryMID());
+				secondaryRole = secondaryPB.getUserRolesString();
+				
+			}
+			catch(ITrustException e){
+			}
+	%>
+	<tr>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getTimeLogged())) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getTransactionType().name())) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (loggedInRole)) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (secondaryRole)) %></td>
+		<td><%= StringEscapeUtils.escapeHtml("" + (t.getAddedInfo())) %></td>
+	</tr>
+	<%
+		}
+	}
+%>
+</table>
+
+<%		
+	}
+	else if(summary!=null){
+	//draw chart here
+		FilterTransactionAction filter = new FilterTransactionAction(DAOFactory.getProductionInstance());
+		List<TransactionBean> list = filter.FilterAll(logInRole,secondRole,start,end,type);
+		%>
+		<h1>Transaction Logs Summary</h1>
+		<%
+		if(list.isEmpty()){
+		%>
+		<h2><font color="red">No Entries Found</font></h2>
+		<%		
+		}
+		else{ 
+			
+			TransactionMapBuilderAction mapper = new TransactionMapBuilderAction(list, DAOFactory.getProductionInstance().getAuthDAO());
+			HashMap<String,Integer> loggedInMap = mapper.mapLoggedIn();
+			HashMap<String,Integer> secondMap = mapper.mapSecondary();
+			HashMap<String,Integer> dateMap = mapper.mapDates();
+			HashMap<String,Integer> typeMap = mapper.mapTypes();
+			%>
+			
+			
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+
+        var logRole = google.visualization.arrayToDataTable([
+          ['Logged in Roles', 'Number of Transaction Logs'],
+  	<%
+		    Set mapSet = loggedInMap.entrySet();
+		    Iterator mapIterator = mapSet.iterator();
+		    while (mapIterator.hasNext()) {
+		    	Map.Entry map = (Map.Entry) mapIterator.next();
+		    	String role = (String)map.getKey();
+		    	Integer value = (Integer)map.getValue();
+				out.println("['"+role+"', "+value+"],");
+		    }
+  	%>
+        ]);
+        
+        var secRole = google.visualization.arrayToDataTable([
+            ['Secondary Roles', 'Number of Transaction Logs'],
+    	<%
+  		    mapSet = secondMap.entrySet();
+  		    mapIterator = mapSet.iterator();
+  		    while (mapIterator.hasNext()) {
+  		    	Map.Entry map = (Map.Entry) mapIterator.next();
+  		    	String role = (String)map.getKey();
+  		    	Integer value = (Integer)map.getValue();
+  				out.println("['"+role+"', "+value+"],");
+  		    }
+    	%>
+          ]);
+
+        var monthyear = google.visualization.arrayToDataTable([
+            ['Month/Year', 'Number of Transaction Logs'],
+    	<%
+  		    mapSet = dateMap.entrySet();
+  		    mapIterator = mapSet.iterator();
+  		    while (mapIterator.hasNext()) {
+  		    	Map.Entry map = (Map.Entry) mapIterator.next();
+  		    	String monthy = (String)map.getKey();
+  		    	Integer value = (Integer)map.getValue();
+  				out.println("['"+monthy+"', "+value+"],");
+  		    }
+    	%>
+          ]);
+        
+        
+        var trantype = google.visualization.arrayToDataTable([
+	        ['Transaction Type', 'Number of Transaction Logs'],
+		<%
+	    mapSet = typeMap.entrySet();
+	    mapIterator = mapSet.iterator();
+	    while (mapIterator.hasNext()) {
+	    	Map.Entry map = (Map.Entry) mapIterator.next();
+	    	String TrType = (String)map.getKey();
+	    	Integer value = (Integer)map.getValue();
+			out.println("['"+TrType+"', "+value+"],");
+	    }
+		%>
+	      ]);
+        
+        
+        var options1 = {
+          title: 'Logged In Roles'
+        };
+        var options2 = {
+          title: 'Secondary Roles'
+        };
+
+        var options3 = {
+          title: 'Month/Year Logs'
+        };
+
+        var options4 = {
+          title: 'Transaction Types'
+        };
+
+
+        var chart1 = new google.visualization.ColumnChart(document.getElementById('chart1'));
+        chart1.draw(logRole, options1);
+        
+        var chart2 = new google.visualization.ColumnChart(document.getElementById('chart2'));
+        chart2.draw(secRole, options2);
+        
+        var chart3 = new google.visualization.ColumnChart(document.getElementById('chart3'));
+        chart3.draw(monthyear, options3);
+        
+        var chart4 = new google.visualization.ColumnChart(document.getElementById('chart4'));
+        chart4.draw(trantype, options4);        
+      }
+    </script>
+    <div id="chart1" style="width: 900px; height: 500px;"></div>
+    <div id="chart2" style="width: 900px; height: 500px;"></div>
+    <div id="chart3" style="width: 900px; height: 500px;"></div>
+    <div id="chart4" style="width: 900px; height: 500px;"></div>
+    
+    
+<%			
+		}	
+
+	
+	}
+	else{
+%>
+
+<form name = "filter_logs"> 
+<input type="hidden" name="filter_log"> 
+<table class="fTable" align=center">
+	<tr>
+		<th align=center colspan = '4'>
+			Filter Transaction Logs
+		</th>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">
+			Logged In User Role
+		</td>
+		<td>
+			<select name="loggedInRole">
+				<option value="all">All</option>
+				<option value="hcp">Health Care Personnel</option>
+				<option value="patient">Patient</option>
+				<option value="admin">Administrator</option>
+				<option value="lhcp">Licensed Health Care Professional</option>
+				<option value="dlhcp">Designated Licensed Health Care Professional</option>
+				<option value="er">Emergency Responder</option>
+				<option value="uap">Unlicensed Authorized Personnel</option>
+				<option value="tester">Software Tester</option>
+				<option value="representative">Personal Representative</option>
+				<option value="pha">Public Health Agent</option>
+				<option value="lt">Lab Technician</option>
+			</select>
+		</td>
+		<td class="subHeaderVertical">
+			Secondary User Role
+		</td>
+		<td>
+			<select name="secondRole">
+				<option value="all">All</option>
+				<option value="hcp">Health Care Personnel</option>
+				<option value="patient">Patient</option>
+				<option value="admin">Administrator</option>
+				<option value="lhcp">Licensed Health Care Professional</option>
+				<option value="dlhcp">Designated Licensed Health Care Professional</option>
+				<option value="er">Emergency Responder</option>
+				<option value="uap">Unlicensed Authorized Personnel</option>
+				<option value="tester">Software Tester</option>
+				<option value="representative">Personal Representative</option>
+				<option value="pha">Public Health Agent</option>
+				<option value="lt">Lab Technician</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td>Start Date:</td>
+		<td>
+			<input name="startDate">
+			<input type=button value="Select Date" onclick="displayDatePicker('startDate');">
+		</td>
+		<td>End Date:</td>
+		<td>
+			<input name="endDate">
+			<input type=button value="Select Date" onclick="displayDatePicker('endDate');">
+		</td>
+	</tr>
+	<tr>
+		<td class="subHeaderVertical">
+			Transaction Type
+		</td>
+		<td>
+			<select name="transactionType">
+				<option value="all">All</option>
+	<%
+		for(TransactionType t: TransactionType.values()){
+			if(t.getCode()!=0){
+			%>
+			<option value="<%=t.getCode() %>"><%=StringEscapeUtils.escapeHtml("" + (t.name())) %></option>
+			<%
+			}
+		}
+	%>
+			</select>
+		</td>
+		<td colspan ='2'></td>
+	</tr>
+	<tr>
+		<td>
+		</td>
+		<td colspan = '2'>
+			<input type="submit" name="view" id="view"
+			style="font-size: 10pt; font-weight: bold;"
+			value="View" />
+		</td>
+		<td colspan = '2'>
+			<input type="submit" name="summary" id="summary"
+			style="font-size: 10pt; font-weight: bold;"
+			value="Summary" />
+		</td>
+	</tr>
+</table>
+
+</form>
+<% 
+} 
+%>
+</body>
+<%@include file="/footer.jsp" %>

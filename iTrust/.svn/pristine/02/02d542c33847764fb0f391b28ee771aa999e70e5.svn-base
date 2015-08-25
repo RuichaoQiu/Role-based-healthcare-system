@@ -1,0 +1,137 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.CDCStatsBean;
+import edu.ncsu.csc.itrust.beans.NormalBean;
+import edu.ncsu.csc.itrust.beans.PatientBean;
+import edu.ncsu.csc.itrust.beans.InitRecord;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.dao.mysql.AuthDAO;
+import edu.ncsu.csc.itrust.dao.mysql.CDCBmiStatsDAO;
+import edu.ncsu.csc.itrust.dao.mysql.CDCHeadCircStatsDAO;
+import edu.ncsu.csc.itrust.dao.mysql.CDCHeightStatsDAO;
+import edu.ncsu.csc.itrust.dao.mysql.CDCStatsDAO;
+import edu.ncsu.csc.itrust.dao.mysql.CDCWeightStatsDAO;
+import edu.ncsu.csc.itrust.dao.mysql.InitRecordsDAO;
+import edu.ncsu.csc.itrust.dao.mysql.NormalDAO;
+import edu.ncsu.csc.itrust.dao.mysql.OfficeVisitDAO;
+import edu.ncsu.csc.itrust.dao.mysql.PatientDAO;
+import edu.ncsu.csc.itrust.enums.Role;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+import edu.ncsu.csc.itrust.exception.DBException;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+
+/**
+ * ViewinitialRecordsHistoryAction is an action class used for viewing a patient's initial records.
+ * 
+ */
+@SuppressWarnings("unused")
+public class ViewInitRecordsHistoryAction {
+	
+	/** The integer for representing a Male patient */
+	public static final int MALE = 1;
+	/** The integer for representing a Female patient */
+	public static final int FEMALE = 2;
+	
+	private PatientDAO patientDAO;
+	private InitRecordsDAO irDAO;
+	private AuthDAO authDAO;
+	private long mid = 0;
+	
+	
+	private Role user;
+	
+	private long loggedInMID;
+	
+	private EventLoggingAction loggingAction;
+	
+	/**
+	 * Constructor for ViewinitialRecordsHistoryAction. Initializes all DAO field objects with the DAOFactory that is passed
+	 * in. Also sets the pid of the patient whose records are to be viewed and saves the logged in user's mid for logging.
+	 * @param factory the DAOFactory to have database interactions with
+	 * @param pidString the String representing the patient's mid
+	 * @param loggedInMID long for the logged in user's mid
+	 * @throws ITrustException
+	 */
+	public ViewInitRecordsHistoryAction(DAOFactory factory, String pidString, long loggedInMID) throws ITrustException{
+		init(factory);
+		this.mid = Long.parseLong(pidString);
+		this.user = authDAO.getUserRole(loggedInMID);
+		this.loggedInMID = loggedInMID;
+			
+	}
+	
+	/**
+	 * Initializes the DAO fields by getting them from the DAOFactory passed in from the constructor
+	 * @param factory DAOFactory to initialize the DAO fields with
+	 */
+	private void init(DAOFactory factory){
+		irDAO = factory.getInitRecordsDAO();
+		patientDAO = factory.getPatientDAO();
+		authDAO = factory.getAuthDAO();
+		loggingAction = new EventLoggingAction(factory);		
+	}
+	
+	/**
+	 * Gets the patient's MID as a long
+	 * @return the patient's mid
+	 */
+	public long getPatientID(){
+		return mid;
+	}
+	
+	/**
+	 * Get the patient's name as a String
+	 * @return the patient's name
+	 * @throws ITrustException
+	 */
+	public String getPatientName() throws ITrustException{
+		return patientDAO.getName(mid);
+	}
+	
+	/**
+	 * Get the patient's first name as a String
+	 * @return the patient's name
+	 * @throws ITrustException
+	 */
+	public String getPatientFirstName() throws ITrustException{
+		return patientDAO.getFirstName(mid);
+	}
+	
+	/**
+	 * Get the patient's last name as a String
+	 * @return the patient's name
+	 * @throws ITrustException
+	 */
+	public String getPatientLastName() throws ITrustException{
+		return patientDAO.getLastName(mid);
+	}
+	
+	public String getPatientGender() throws ITrustException{
+		return patientDAO.getGender(mid);
+	}
+	
+	/**
+	 * Gets all of a patient's initial records. Returns an ordered list starting from when the patient is youngest 
+	 * to oldest at the time the initial record was taken.
+	 * @return list of initial records ordered by oldest to most recent
+	 * @throws ITrustException
+	 */
+	public List<InitRecord> getAllPatientInitRecords() throws ITrustException{
+		
+		if(user.getUserRolesString().equals("hcp")){
+			//Log for an HCP
+			loggingAction.logEvent(TransactionType.HCP_VIEW_INIT_RECORD, loggedInMID, mid, "");
+		}
+		
+		List<InitRecord> allList = irDAO.getAllInitRecords(mid);
+		
+		return allList;		
+	}
+	
+
+}

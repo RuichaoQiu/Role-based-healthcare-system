@@ -1,0 +1,101 @@
+package edu.ncsu.csc.itrust.dao.transaction;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.List;
+
+import junit.framework.TestCase;
+import edu.ncsu.csc.itrust.beans.TransactionBean;
+import edu.ncsu.csc.itrust.dao.mysql.TransactionDAO;
+import edu.ncsu.csc.itrust.datagenerators.TestDataGenerator;
+import edu.ncsu.csc.itrust.testutils.TestDAOFactory;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+
+import java.util.Date;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+
+public class AccessRecordTest extends TestCase {
+	private TransactionDAO tranDAO = TestDAOFactory.getTestInstance().getTransactionDAO();
+	private TestDataGenerator gen;
+
+	@Override
+	protected void setUp() throws Exception {
+		gen = new TestDataGenerator();
+		gen.clearAllTables();
+		gen.transactionLog();
+	}
+
+	// note - testing the actual loader is done elsewhere. Just check that we're getting the right
+	// ones here
+	public void testGetAllAccesses() throws Exception {
+		List<TransactionBean> transactions = tranDAO.getAllRecordAccesses(2L, -1, false);
+		assertEquals(5, transactions.size());
+		for (int i = 0; i < 5; i++) {
+			assertEquals(9000000000L, transactions.get(i).getLoggedInMID());
+			assertEquals(2L, transactions.get(i).getSecondaryMID());
+		}
+	}
+
+	public void testGetSomeAccesses() throws Exception {
+		List<TransactionBean> transactions = tranDAO.getRecordAccesses(2L, -1, new SimpleDateFormat("MM/dd/yyyy")
+				.parse("06/23/2007"), new SimpleDateFormat("MM/dd/yyyy").parse("06/24/2007"), false);
+		assertEquals(3, transactions.size());
+		transactions = tranDAO.getRecordAccesses(1L, -1, new SimpleDateFormat("MM/dd/yyyy").parse("06/23/2007"),
+				new SimpleDateFormat("MM/dd/yyyy").parse("06/24/2007"), false);
+		assertEquals(0, transactions.size());
+	}
+	
+	public void testgetTransactionsBetweenOfType () throws Exception {
+		gen.clearAllTables(); 
+		gen.transactionLog2();
+		
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("13/07/2008");
+		long start_time = date.getTime();
+		
+		date = dateFormat.parse("16/07/2008");
+		long end_time = date.getTime();
+		
+		
+		List <TransactionBean> transactions = 
+				tranDAO.getTransactionsBetweenOfType(new Timestamp(start_time), new Timestamp(end_time), TransactionType.PRESCRIPTION_REPORT_VIEW);
+		assertEquals(1, transactions.size());
+		assertEquals(9000000003L, transactions.get(0).getLoggedInMID());
+	}
+	
+	public void testGetTransactionsBetweenGenericCode() throws Exception {
+		gen.clearAllTables(); 
+		gen.transactionLog2();
+		
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("00/02/2008");
+		long start_time = date.getTime();
+		
+		date = dateFormat.parse("00/08/2008");
+		long end_time = date.getTime();
+
+		List <TransactionBean> transactions = tranDAO.getTransactionsBetweenOfType 
+				(new Timestamp(start_time), new Timestamp(end_time), TransactionType.GENERIC_CODE);
+		
+		assertEquals(2, transactions.size());
+		assertEquals(9000000000L, transactions.get(1).getLoggedInMID());
+		assertEquals(9000000003L, transactions.get(0).getLoggedInMID());
+	}
+	
+	public void testAnyDate() throws Exception {
+		gen.clearAllTables(); 
+		gen.transactionLog2();
+		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = dateFormat.parse("01/01/0000");
+		long start_time = date.getTime();
+
+		List <TransactionBean> transactions = tranDAO.getTransactionsBetweenOfType 
+				(new Timestamp(start_time), new Timestamp(Long.MAX_VALUE), TransactionType.GENERIC_CODE);
+		
+		assertEquals(4, transactions.size());
+	}
+	
+}

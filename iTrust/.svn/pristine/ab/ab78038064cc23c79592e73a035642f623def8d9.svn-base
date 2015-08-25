@@ -1,0 +1,119 @@
+package edu.ncsu.csc.itrust.beans;
+
+import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.ArrayList;
+
+/**
+ * A bean for storing initial record data.
+ * 
+ * A bean's purpose is to store data. Period. Little or no functionality is to be added to a bean 
+ * (with the exception of minor formatting such as concatenating phone numbers together). 
+ * A bean must only have Getters and Setters (Eclipse Hint: Use Source > Generate Getters and Setters 
+ * to create these easily)
+ */
+public class InitRecord {
+	private long Mid = 0;
+	private String Lastname = "";
+	private String Firstname = "";
+	private String LMP = "0000-00-00";
+	private String EDD = "0000-00-00";
+	private String WeeksPreg = "";
+	private String PriorPregnancies = "";
+	private String Notes = "";
+
+	public InitRecord() {
+	}
+	
+	public long getMid(){
+		return Mid;
+	}
+	
+	public void setMid(long Mid){
+		this.Mid = Mid;
+	}
+	
+	public String getLastname(){
+		return Lastname;
+	}
+	
+	public void setLastname(String Lastname){
+		this.Lastname = Lastname;
+	}
+	
+	public String getFirstname(){
+		return Firstname;
+	}
+	
+	public void setFirstname(String Firstname){
+		this.Firstname = Firstname;
+	}
+	
+	public Date getLMP() {
+		Date d = null; 
+		try {
+			d = new SimpleDateFormat("yyyy-MM-dd").parse(LMP);
+		} catch (ParseException e) {
+			System.out.println(e.toString());
+		}
+		return d;
+	}
+	
+	public String getLMPstr() {
+		return LMP;
+	}
+	
+	public void setLMP(String LMP){
+		this.LMP = LMP;
+	}
+	
+	public Date getEDD() {
+		Date d = null; 
+		try {
+			d = new SimpleDateFormat("yyyy-MM-dd").parse(EDD);
+		} catch (ParseException e) {
+			System.out.println(e.toString());
+		}
+		return d;
+	}
+	
+	public String getEDDstr() {
+		return EDD;
+	}
+	
+	public void setEDD(String EDD){
+		this.EDD = EDD;
+	}
+	
+	public String getWeeksPreg(){
+		return WeeksPreg;
+	}
+	
+	public void setWeeksPreg(String WeeksPreg){
+		this.WeeksPreg = WeeksPreg;
+	}
+	
+	public String getPriorPregnancies(){
+		return this.PriorPregnancies;
+	}
+	
+	public void setPriorPregnancies(String PriorPregnancies){
+		if(this.PriorPregnancies.equals(""))
+			this.PriorPregnancies += PriorPregnancies;
+		else
+			this.PriorPregnancies += ":" + PriorPregnancies;
+	}
+	
+	public String getNotes(){
+		return Notes;
+	}
+	
+	public void setNotes(String Notes){
+		this.Notes = Notes;
+	}
+	
+
+}

@@ -1,0 +1,52 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.util.List;
+
+import edu.ncsu.csc.itrust.beans.DeathStatsBean;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.dao.mysql.DeathStatsDAO;
+import edu.ncsu.csc.itrust.enums.Gender;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+import edu.ncsu.csc.itrust.exception.DBException;
+
+/**
+ * ViewClaimsAction handles interaction between user input and the billing DAO.
+ */
+public class ViewDeathStatsAction {
+	private DeathStatsDAO deathStats;
+	private EventLoggingAction ela;
+
+
+	/**
+	 * ViewClaimsAction simply initializes the DAOs.
+	 * 
+	 * @param fact
+	 *            The dao factory that will create the DAOs
+	 */
+	public ViewDeathStatsAction(DAOFactory fact) {
+		deathStats = fact.getDeathStatsDAO();
+		ela = new EventLoggingAction(fact);
+
+	}
+
+	/**
+	 * getClaims returns a list of top deaths
+	 * 
+	 * @return A list of top deaths
+	 */
+	public List<DeathStatsBean> getStats(long hcpMID, Gender gender,
+			int startDate, int endDate, int limit) {
+		List<DeathStatsBean> result = null;
+
+		try {
+			result = deathStats.getTopCauses(hcpMID, gender, startDate,
+					endDate, limit);
+			ela.logEvent(TransactionType.DEATH_TRENDS_VIEW,  hcpMID, hcpMID, null);
+		} catch (DBException e) {
+			e.printStackTrace();
+		}
+
+		return result;
+	}
+
+}

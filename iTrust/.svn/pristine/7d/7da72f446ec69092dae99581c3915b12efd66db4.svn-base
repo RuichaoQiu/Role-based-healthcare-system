@@ -1,0 +1,199 @@
+package edu.ncsu.csc.itrust.action;
+
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import edu.ncsu.csc.itrust.EmailUtil;
+import edu.ncsu.csc.itrust.beans.ApptBean;
+import edu.ncsu.csc.itrust.beans.Email;
+import edu.ncsu.csc.itrust.beans.MessageBean;
+import edu.ncsu.csc.itrust.beans.PatientBean;
+import edu.ncsu.csc.itrust.dao.DAOFactory;
+import edu.ncsu.csc.itrust.dao.mysql.ApptDAO;
+import edu.ncsu.csc.itrust.dao.mysql.PatientDAO;
+import edu.ncsu.csc.itrust.dao.mysql.PersonnelDAO;
+import edu.ncsu.csc.itrust.enums.TransactionType;
+import edu.ncsu.csc.itrust.exception.FormValidationException;
+import edu.ncsu.csc.itrust.exception.ITrustException;
+
+/**
+ * Gets the VisitReminders for a given patient Used by visitReminders.jsp
+ * 
+ * 
+ */
+public class SendVisitRemindersAction {
+
+	private static final long SYSTEM_REMINDER_MID = 9000000009L;
+	private static final int WEEK_IN_MILLIS = 1000 * 60 * 60 * 24 * 7;
+
+	/**
+	 * Reminder Type enumeration.
+	 */
+	public static enum ReminderType {
+		DIAGNOSED_CARE_NEEDERS("Diagnosed Care Needers");
+
+		private String typeName;
+
+		private ReminderType(String typeName) {
+			this.typeName = typeName;
+		}
+
+		private static final Map<String, ReminderType> map = new HashMap<String, ReminderType>();
+		static {
+			for (ReminderType rt : ReminderType.values()) {
+				map.put(rt.getTypeName(), rt);
+			}
+		}
+
+		/**
+		 * Gets the ReminderType for the name passed as a param
+		 * 
+		 * @param name
+		 * @return the ReminderType associated with the name
+		 */
+		public static ReminderType getReminderType(String name) {
+			return map.get(name);
+		}
+
+		/**
+		 * Returns the type name as a string
+		 * 
+		 * @return
+		 */
+		public String getTypeName() {
+			return typeName;
+		}
+	}
+
+	/**
+	 * 
+	 * Begin SendVisitRemindersAction code
+	 * 
+	 */
+	private ApptDAO apptDAO;
+	private PersonnelDAO personnelDAO;
+	private PatientDAO patientDAO;
+	private DAOFactory factory;
+	private long loggedInMID;
+
+	/**
+	 * Set up defaults
+	 * 
+	 * @param factory The DAOFactory used to create the DAOs used in this action.
+	 * @param loggedInMID MID of the person who is logged in
+	 * @throws ITrustException
+	 */
+	public SendVisitRemindersAction(DAOFactory factory, long loggedInMID) throws ITrustException {
+		this.loggedInMID = loggedInMID;
+		apptDAO = factory.getApptDAO();
+		patientDAO = factory.getPatientDAO();
+		personnelDAO = factory.getPersonnelDAO();
+		this.factory = factory;
+	}
+
+	/**
+	 * Sends out a reminder to each of the people with an appointment in the next year
+	 * 
+	 * @param type
+	 *            the ReminderType
+	 * @return the list of VisitReminderReturnForms
+	 * @throws ITrustException
+	 * @throws FormValidationException
+	 */
+	public void sendVisitReminders(ReminderType type) throws ITrustException, FormValidationException {
+		sendVisitReminders(type,365);
+	}
+	
+	/**
+	 * Makes a message bean for the reminder message based on the given
+	 * appointment bean
+	 * @param appt the appointment bean to make the message for
+	 * @return The messageBean that corresponds to the appointment
+	 * @throws ITrustException
+	 */
+	public MessageBean makeReminderMessage(ApptBean appt) throws ITrustException{
+		long milliseconds_per_day = 24 /*hours*/ * 60 /*minutes*/ * 60 /*seconds*/ * 1000;
+		if(appt== null)
+			throw new ITrustException("Invalid Visit Needer");
+		MessageBean reminder = new MessageBean();
+		reminder.setFrom(SYSTEM_REMINDER_MID);
+		reminder.setTo(appt.getPatient());
+		reminder.setSubject("Reminder: upcoming appointment in "+ (appt.getDate().getTime() - (new Date()).getTime())/milliseconds_per_day +" day(s)");
+		String date = appt.getDate().getMonth()+"/"+appt.getDate().getDate() + "/" + appt.getDate().getYear();
+		String name =  personnelDAO.getName(appt.getHcp());
+		reminder.setBody("You have an appointment on "+  makeTime(appt.getDate()) + ", "+ date +" with Dr. "+ name);
+		reminder.setRead(0);
+		return reminder;
+	}
+	 
+	/**
+	 * Makes a reminder email that tells a user they have a system reminder message
+	 * @param to the email of the recipient
+	 * @return the email object to send using EmailUtil
+	 */
+	public Email makeReminderEmail(String to) {
+		Email reminder = new Email();
+		reminder.setFrom("SystemReminder@itrust.com");
+		reminder.setSubject("New System Reminder");
+		reminder.setBody("You have a new message from System Reminder");
+		reminder.setTimeAdded(new Timestamp(new Date().getTime()));
+		List<String> toList = new ArrayList<String>();
+		toList.add(to);
+		reminder.setToList(toList);
+		return reminder;
+	}
+	
+	private String makeTime(Timestamp t){
+		return t.getHours() + ":" + t.getMinutes();
+	}
+
+	/**
+	 * Sends out a reminder to each of the people with an appointment 
+	 * within the given time frame
+	 * 
+	 * @param type
+	 *            the ReminderType
+	 * @param within
+	 * 			  the days until next appointment
+	 * 
+	 * @throws ITrustException
+	 */
+	public void sendVisitReminders(ReminderType type, int within) throws ITrustException, FormValidationException {
+		EventLoggingAction ela = new EventLoggingAction(factory);
+		if (within < 1)
+			throw new FormValidationException("Must be a number greater than 0");
+		if (null == type)
+			throw new ITrustException("Reminder Type DNE");
+		
+		switch (type) {
+			case DIAGNOSED_CARE_NEEDERS:
+				List<ApptBean> appts = apptDAO.getApptWithin(loggedInMID, within);
+				for(int i = 0; i< appts.size();i++){
+					ApptBean appt = appts.get(i);
+					MessageBean reminder = makeReminderMessage(appt);
+					SendMessageAction ma = new SendMessageAction(factory, loggedInMID);
+					EmailUtil eu = new EmailUtil(factory);
+					PatientBean patient = patientDAO.getPatient(appt.getPatient());
+					try{
+						ma.sendMessage(reminder);
+						eu.sendEmail(makeReminderEmail(patient.getEmail()));
+					}
+					catch(SQLException e){
+						System.err.println(e.getMessage());
+					}
+				}
+				break;
+			default:
+				throw new ITrustException("Reminder Type DNE");
+		}
+		ela.logEvent(TransactionType.SEND_APPOINTMENT_REMINDER_MESSAGE, loggedInMID, SYSTEM_REMINDER_MID, "");
+	}
+	
+
+	
+}

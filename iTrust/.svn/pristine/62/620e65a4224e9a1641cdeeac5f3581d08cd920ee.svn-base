@@ -1,0 +1,136 @@
+
+<%@page import="edu.ncsu.csc.itrust.beans.ObstericsBean"%>
+<%@page import="edu.ncsu.csc.itrust.action.EditObstericVisitAction"%>
+
+<% { %>
+
+<%
+
+String updateMessage = "";
+String updateErrorMessage = "";
+
+if (pidString == null || 1 > pidString.length()) {
+	response.sendRedirect("/iTrust/auth/getPatientID.jsp?forward=hcp-uap/editObsterics.jsp");
+   	return;
+}
+
+//Create ViewInitialRecordsHistoryAction object to interact with patient's historical Initial metric history
+EditObstericVisitAction action = new EditObstericVisitAction(prodDAO,loggedInMID.longValue(), pidString);
+
+//Get the patient's name
+long pid = action.getPid();
+
+//Get all of the patient's Initial records
+List<ObstericsBean> records = action.getObstericVisits();
+
+if ("obstericsForm".equals(submittedFormName)) {
+	EditObstericVisitAction obsterics = ovaction.obstericVisits();
+    
+	ObstericsBean bean = new ObstericsBean();
+	//validator requires description but DiagnosesDAO does not. Set here to pass validation.
+
+    bean.setWeeksPreg(request.getParameter("weeksPreg"));
+    bean.setDaysPreg(request.getParameter("daysPreg"));
+    bean.setWeight(request.getParameter("obs_weight"));
+    bean.setBloodPressure(request.getParameter("obs_bp"));
+    bean.setFHR(request.getParameter("FHR"));
+    bean.setFHP(request.getParameter("FHU"));
+        
+    obsterics.addObstericVisit(bean);
+    
+   	ovaction.logOfficeVisitEvent(TransactionType.OFFICE_VISIT_EDIT);
+    ovaction.logOfficeVisitEvent(TransactionType.DIAGNOSIS_ADD);
+    updateMessage = "Obsterics information successfully updated.";
+
+	   
+}
+%>
+
+
+<div align="center">
+
+<form action="editOfficeVisit.jsp" method="post" id="obstericsForm">
+
+<input type="hidden" name="formIsFilled" value="true" />
+<input type="hidden" name="formName" value="obstericsForm" />
+
+<table class="fTable" align="center">
+    <tr>
+        <th colspan="5"><a href="#" class="topLink">[Top]</a>Obsterics Data</th>
+    </tr>
+    <tr class="subHeader">
+			<td>Weeks Pregnant as of Office Visit Date</td>
+			<td>Weight</td>
+			<td>Blood Pressure</td>
+			<td>FHR</td>
+			<td>FHP</td>
+    </tr>
+
+    <%if( records.isEmpty() ){ %>
+    <tr>
+        <td  colspan="5" style="text-align: center;">No obsterics on record</td>
+    </tr>
+    <%} else { 
+    		for( ObstericsBean ob : records ) { 
+    				
+    			%>
+        			
+    	    	<tr>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getWeeksPreg() + " weeks " + ob.getDaysPreg() + " days") %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getWeight() + " lbs.") %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getBloodPressure()) %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getFHR() + " bpm") %></td>
+    	    		<td align=center><%= StringEscapeUtils.escapeHtml("" + ob.getFHP() + " cm") %></td>
+    			</tr>
+
+        		<%
+    		}
+        }%>
+    <tr>
+        <th colspan="6" style="text-align: center;">New</th>
+    </tr>
+    <tr>
+		<td class="subHeader">Weeks Pregnant since Last Office Visit:</td>
+		<td ><input name="weeksPreg"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+			
+		<td class="subHeader">Days Pregnant since Last Office Visit:</td>
+		<td ><input name="daysPreg"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+		
+		<td class="subHeader">Weight (lbs.):</td>
+		<td ><input name="obs_weight"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+			
+		<td class="subHeader">Blood Pressure:</td>
+		<td ><input name="obs_bp"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+		
+		<td class="subHeader">Fetal Heart Rate (FHR):</td>
+		<td ><input name="FHR"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+			
+		<td class="subHeader">Fundamental Height of Uterus (FHU):</td>
+		<td ><input name="FHU"
+			value="<%= StringEscapeUtils.escapeHtml("") %>" style="width: 50px" type="text"
+			maxlength="5"></td>
+    </tr>
+    <tr>
+	   <td colspan="2" align="center">
+			<input type="submit" name="obstericsForm" value="Add Record" >
+		</td>
+    </tr>
+</table>
+
+</form>
+
+</div>
+
+
+<% } %>
+

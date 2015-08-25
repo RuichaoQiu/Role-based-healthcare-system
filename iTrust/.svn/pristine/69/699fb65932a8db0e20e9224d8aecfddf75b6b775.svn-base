@@ -1,0 +1,33 @@
+package edu.ncsu.csc.itrust.beans;
+
+public class DeathStatsBean {
+	
+	private String code;
+	private String description;
+	private int count;
+	
+	public DeathStatsBean() {
+		this.code = null;
+		this.description = null;
+		this.count = 0;
+	}
+	public String getCode() {
+		return code;
+	}
+	public void setCode(String code) {
+		this.code = code;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	public int getCount() {
+		return count;
+	}
+	public void setCount(int count) {
+		this.count = count;
+	}
+
+}
